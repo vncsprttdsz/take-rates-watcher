@@ -1,0 +1,129 @@
+# ============================================================================
+# Fontes monitoradas pelo take-rates-watcher.
+#
+# Cada entrada descreve UMA pagina. O script abre a pagina num navegador
+# headless, extrai apenas as linhas que falam de dinheiro (ver `keywords`),
+# e compara com o que foi visto da ultima vez (state/last_seen.json).
+#
+# Duas camadas de deteccao, com severidades diferentes:
+#   1. NUMEROS  - todo "%" e todo "R$" encontrados nas linhas relevantes.
+#                 Mudou um numero = tarifa mudou. Alerta forte.
+#   2. TEXTO    - hash das linhas relevantes. Mudou o texto sem mudar numero
+#                 = mudanca de regra/redacao. Alerta fraco, mas avisa.
+# ============================================================================
+
+# Configuracao global (pode ser sobrescrita por fonte).
+defaults:
+  # So entram na comparacao as linhas que contem "%", "R$" ou uma destas
+  # palavras. E o que separa a tabela de tarifas do carrossel de marketing.
+  keywords:
+    - comissao
+    - comissoes
+    - tarifa
+    - taxa
+    - custo
+    - frete
+    - percentual
+    - repasse
+    - assinatura
+    - mensalidade
+    - plano
+    - anuncio
+    - armazenagem
+    - logistica
+    - gratis
+    - isento
+    - desconto
+    - teto
+    - minimo
+    - maximo
+    - por venda
+    - por item
+    - por unidade
+    - fba
+    - full
+
+  # Linhas descartadas antes de comparar. Servem para matar falso positivo
+  # recorrente (data de revisao que muda sozinha, aviso de cookie, rodape).
+  # Se depois de alguns dias no ar uma linha ficar alertando a toa, e aqui
+  # que ela deve ser silenciada.
+  ignore_patterns:
+    - '(?i)^\s*(ultima\s+)?atualiza(c|ç)(a|ã)o\s*[:\-]'
+    - '(?i)atualizad[oa]\s+em\s+\d'
+    - '(?i)\bcookies?\b'
+    - '(?i)^\s*©'
+    - '(?i)todos os direitos reservados'
+
+  # Espera apos o DOM carregar, para o JS terminar de pintar a tabela.
+  settle_ms: 3500
+
+  # Tamanho minimo do texto extraido para a pagina ser considerada valida.
+  # Abaixo disso quase certamente e um 404, um captcha ou um erro de render.
+  min_chars: 400
+
+sources:
+  # --------------------------------------------------------------------
+  # SHOPEE - unica fonte com ANO NA URL. A resolucao automatica de ano
+  # esta documentada no README, secao "A virada de ano da Shopee".
+  # --------------------------------------------------------------------
+  - id: shopee_comissao
+    marketplace: Shopee
+    nome: Comissao para vendedores CNPJ e CPF
+    url: https://seller.br.shopee.cn/edu/article/26839/Comissao-para-vendedores-CNPJ-e-CPF-em-2026
+
+    # Quando a URL tem ano, o resolvedor tenta achar sozinho a versao do ano
+    # seguinte. `year_in_url` liga esse comportamento.
+    year_in_url: true
+
+    # Tentativas diretas, na ordem. {year} vira 2027, 2026, ... O id do artigo
+    # (26839) provavelmente MUDA no artigo do ano novo, entao esses templates
+    # sao so a aposta barata; quem costuma acertar e o `link_discovery` abaixo.
+    url_templates:
+      - https://seller.br.shopee.cn/edu/article/26839/Comissao-para-vendedores-CNPJ-e-CPF-em-{year}
+
+    # A partir de que mes comeca a procurar o artigo do ano seguinte.
+    # 9 = setembro: a Shopee costuma publicar a tabela nova no ultimo
+    # trimestre, e procurar antes disso e so gastar requisicao.
+    year_lookahead_from_month: 9
+
+    # Varre os links da propria pagina atras do artigo do ano seguinte.
+    # E o mecanismo principal: nao depende de adivinhar o id do artigo novo,
+    # so de a Shopee linkar o artigo novo a partir do antigo ou do hub.
+    link_discovery:
+      enabled: true
+      # Paginas extras onde procurar o link (alem da propria pagina atual).
+      # Se voce descobrir a URL da categoria/busca do Seller Education Hub,
+      # cole aqui - a deteccao fica bem mais confiavel.
+      extra_pages: []
+      # O texto OU a URL do link precisa casar com isto.
+      link_regex: '(?i)comiss|tarifa|taxa'
+
+    # Regex que precisa aparecer no texto para a pagina ser aceita como valida.
+    # Impede que um 404 bonitinho ou uma home generica vire "a nova fonte".
+    validate_regex: '(?i)comiss'
+
+  # --------------------------------------------------------------------
+  # MERCADO LIVRE
+  # --------------------------------------------------------------------
+  - id: mercadolivre_custos
+    marketplace: Mercado Livre
+    nome: Custos de vender (ajuda 40538)
+    url: https://www.mercadolivre.com.br/ajuda/40538
+    validate_regex: '(?i)(tarifa|custo|comiss)'
+    # A central de ajuda do ML e React puro; da um tempo a mais para pintar.
+    settle_ms: 5000
+
+  # --------------------------------------------------------------------
+  # AMAZON
+  # --------------------------------------------------------------------
+  - id: amazon_fba
+    marketplace: Amazon
+    nome: Logistica da Amazon (FBA)
+    url: https://venda.amazon.com.br/cresca/fba
+    validate_regex: '(?i)(fba|log(i|í)stica)'
+
+  - id: amazon_precos
+    marketplace: Amazon
+    nome: Precos e planos de venda
+    url: https://venda.amazon.com.br/precos
+    validate_regex: '(?i)(plano|pre(c|ç)o|tarifa)'

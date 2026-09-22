@@ -1,0 +1,132 @@
+name: Verifica take rates dos marketplaces
+
+on:
+  schedule:
+    # Horarios em UTC. BRT = UTC-3 (sem horario de verao desde 2019).
+    #
+    # Tres metas: (1) ter rodado ANTES DAS 09:00 BRT, (2) algumas rodadas
+    # durante o dia, (3) uma rodada ANTES DO FIM DO DIA (23:59 BRT).
+    #
+    # O cron do GitHub Actions e best-effort e atrasa - no repo `clipping`
+    # foram medidos 34 a 110 min em dia normal e 5 a 12 HORAS em dia ruim, com
+    # o atraso correlacionado dentro do dia (todos os slots atrasam juntos).
+    # Por isso cada meta tem mais de um slot, e o primeiro de cada meta
+    # dispara horas antes do prazo: e ele que chega a tempo no dia ruim.
+    # Rodadas repetidas nao geram alerta repetido - so mudanca notifica.
+    #
+    # Minutos quebrados evitam os picos de fila de :00, :15, :30 e :45.
+
+    # --- (1) antes das 09:00 BRT (12:00 UTC)
+    - cron: '13 5 * * *'   # 02:13 BRT  tolera ate ~6,5h de atraso
+    - cron: '13 8 * * *'   # 05:13 BRT  tolera ate ~3,5h
+    - cron: '43 9 * * *'   # 06:43 BRT  tolera ate ~2h
+    - cron: '43 10 * * *'  # 07:43 BRT  tolera ate ~1h (dia normal)
+
+    # --- (2) durante o dia
+    - cron: '23 14 * * *'  # 11:23 BRT
+    - cron: '23 17 * * *'  # 14:23 BRT
+    - cron: '23 20 * * *'  # 17:23 BRT
+
+    # --- (3) antes do fim do dia (23:59 BRT = 02:59 UTC do dia seguinte)
+    - cron: '53 22 * * *'  # 19:53 BRT  tolera ate ~4h
+    - cron: '53 0 * * *'   # 21:53 BRT  tolera ate ~2h
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "normal = notifica e grava | debug = so extrai | dry-run = compara sem gravar | seed = regrava baseline"
+        required: false
+        default: "normal"
+        type: choice
+        options: [normal, debug, dry-run, seed]
+
+# Necessario para o job commitar state/last_seen.json de volta no repo.
+permissions:
+  contents: write
+
+# Duas rodadas ao mesmo tempo dariam push conflitante no arquivo de estado.
+# Se o atraso do cron empilhar varios slots, um roda, um espera e os demais
+# sao descartados pelo GitHub - o que e o certo, seriam leituras repetidas.
+concurrency:
+  group: take-rates-watcher
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout do repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias Python
+        run: pip install -r requirements.txt
+
+      # O download do Chromium (~150 MB) e o passo mais lento do job; o cache
+      # e invalidado pelo hash do requirements.txt, ou seja, so volta a baixar
+      # quando a versao do Playwright muda.
+      - name: Cache do Chromium
+        id: cache-browser
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+
+      - name: Instalar Chromium
+        if: steps.cache-browser.outputs.cache-hit != 'true'
+        run: playwright install --with-deps chromium
+
+      - name: Instalar dependencias de sistema do Chromium
+        if: steps.cache-browser.outputs.cache-hit == 'true'
+        run: playwright install-deps chromium
+
+      - name: Rodar testes do parser
+        run: python test_parsing.py
+
+      - name: Verificar tarifas
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          MODO: ${{ github.event.inputs.modo || 'normal' }}
+        run: |
+          case "$MODO" in
+            debug)   python check_tarifas.py --debug ;;
+            dry-run) python check_tarifas.py --dry-run ;;
+            seed)    python check_tarifas.py --seed ;;
+            *)       python check_tarifas.py ;;
+          esac
+
+      - name: Guardar o que foi extraido (modo debug)
+        if: ${{ github.event.inputs.modo == 'debug' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: extracao
+          path: debug/
+          if-no-files-found: ignore
+
+      - name: Commitar estado atualizado
+        if: ${{ github.event.inputs.modo != 'debug' && github.event.inputs.modo != 'dry-run' }}
+        run: |
+          git config user.name "take-rates-watcher-bot"
+          git config user.email "actions@users.noreply.github.com"
+          if git diff --quiet -- state/last_seen.json; then
+            echo "Estado inalterado, nada a commitar."
+          else
+            git add state/last_seen.json
+            git commit -m "chore: atualiza estado das tarifas ($(date -u +%Y-%m-%d))"
+            # A rodada do dia seguinte perde o estado se o push falhar, entao
+            # vale insistir - push concorrente e a causa mais provavel.
+            for tentativa in 1 2 3; do
+              git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push && exit 0
+              echo "push falhou (tentativa $tentativa), tentando de novo em ${tentativa}0s"
+              sleep "${tentativa}0"
+            done
+            echo "::error::nao consegui commitar o estado depois de 3 tentativas"
+            exit 1
+          fi
