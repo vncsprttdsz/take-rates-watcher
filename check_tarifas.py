@@ -133,7 +133,14 @@ def normalize_line(s: str) -> str:
 # ============================================================
 
 PCT_RE = re.compile(r"(\d{1,3}(?:[.,]\d{1,2})?)\s*%")
-BRL_RE = re.compile(r"R\$\s*(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)")
+BRL_RE = re.compile(
+    r"R\$\s*(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)"
+    r"(?:\s*(mil|milh(?:ão|ao|ões|oes))\b)?",
+    re.IGNORECASE,
+)
+# "R$ 500 mil" e "R$ 1,5 milhão" - texto de marketing escreve assim.
+BRL_MULT = {"mil": 1_000, "milhão": 1_000_000, "milhao": 1_000_000,
+            "milhões": 1_000_000, "milhoes": 1_000_000}
 
 
 def parse_brl(raw: str) -> Optional[float]:
@@ -187,6 +194,8 @@ def extract_numbers(lines: List[str]) -> Dict[str, str]:
                 found.setdefault(f"pct:{v:.2f}", line)
         for m in BRL_RE.finditer(line):
             v = parse_brl(m.group(1))
+            if v is not None and m.group(2):
+                v *= BRL_MULT[m.group(2).lower()]
             if v is not None:
                 found.setdefault(f"brl:{v:.2f}", line)
     return found
@@ -354,6 +363,25 @@ def discover_year_links(links: List[dict], src: dict, min_year: int) -> List[str
     return [href for _, href in scored[:5]]
 
 
+def is_new_edition(cand: dict, current: dict, year: int, src: dict,
+                   defaults: dict) -> Tuple[bool, str]:
+    """A pagina candidata e mesmo a edicao de `year`, e nao a atual de novo?
+
+    Carregar sem erro nao basta. O site da Shopee roteia pelo id do artigo e
+    ignora o texto do link: `.../26839/...-em-2027` devolve o artigo de 2026
+    com HTTP 200. Sem esta checagem o monitor "achava" uma edicao nova a cada
+    rodada, subindo o ano sem parar e alertando toda vez.
+    """
+    keywords, ignores = build_filters(defaults, src)
+    h_cand = hash_lines(relevant_lines(cand["text"], keywords, ignores))
+    h_cur = hash_lines(relevant_lines(current["text"], keywords, ignores))
+    if h_cand == h_cur:
+        return False, "mesmo conteudo da pagina atual (o site ignora o texto da URL)"
+    if not re.search(rf"\b{year}\b", f"{cand.get('title', '')}\n{cand['text']}"):
+        return False, f"conteudo nao menciona {year}"
+    return True, "ok"
+
+
 def resolve_source(page, src: dict, prev: dict, defaults: dict, log) -> dict:
     """Carrega a fonte, tentando antes achar a edicao do ano seguinte.
 
@@ -406,18 +434,24 @@ def resolve_source(page, src: dict, prev: dict, defaults: dict, log) -> dict:
         if in_window or overdue:
             wanted = sorted({now_year + 1, now_year, cur_year + 1}, reverse=True)
             wanted = [y for y in wanted if y > cur_year]
-            candidates: List[str] = []
+            candidates: List[Tuple[int, str]] = []
             for year in wanted:
                 for tpl in templates:
-                    candidates.append(tpl.format(year=year))
-            candidates += discover_year_links(current.get("links", []), src, cur_year)
+                    candidates.append((year, tpl.format(year=year)))
+            for href in discover_year_links(current.get("links", []), src, cur_year):
+                candidates.append((url_year(href) or cur_year + 1, href))
 
-            for cand in candidates:
+            for year, cand in candidates:
                 res = attempt(cand)
-                if res is not None:
-                    upgraded_from = current["url"]
-                    current = res
-                    break
+                if res is None:
+                    continue
+                ok, why = is_new_edition(res, current, year, src, defaults)
+                if not ok:
+                    log(f"      x nao e edicao nova: {why}")
+                    continue
+                upgraded_from = current["url"]
+                current = res
+                break
 
     # --- ultimo recurso: templates de qualquer ano ---------------------
     if current is None and templates:
@@ -555,10 +589,14 @@ def render_event(ev: dict) -> str:
             parts.append("\n<b>Entrou:</b>")
             for val, ctx in ev["entrou"][:8]:
                 parts.append(f"  ➕ <b>{esc(val)}</b> — {esc(ctx[:180])}")
+            if len(ev["entrou"]) > 8:
+                parts.append(f"  <i>… e mais {len(ev['entrou']) - 8}</i>")
         if ev["saiu"]:
             parts.append("\n<b>Saiu:</b>")
             for val, ctx in ev["saiu"][:8]:
                 parts.append(f"  ➖ <b>{esc(val)}</b> — {esc(ctx[:180])}")
+            if len(ev["saiu"]) > 8:
+                parts.append(f"  <i>… e mais {len(ev['saiu']) - 8}</i>")
         parts.append(f'\n🔗 <a href="{esc(ev["url"])}">ver pagina</a>')
         return "\n".join(parts)
 

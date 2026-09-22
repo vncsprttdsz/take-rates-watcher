@@ -86,7 +86,7 @@
       ],
       "numbers": {
         "brl:19.00": "Frete grátis: abaixo R$ 19",
-        "brl:500.00": "Confira a campanha em que você vende até R$ 500 mil com comissão ZERO. Clique aqui e saiba mais",
+        "brl:500000.00": "Confira a campanha em que você vende até R$ 500 mil com comissão ZERO. Clique aqui e saiba mais",
         "brl:6.00": "*Já é FBA? Pague apenas R$ 6 em tarifa de logística para produtos a partir de R$ 79.",
         "brl:79.00": "*Já é FBA? Pague apenas R$ 6 em tarifa de logística para produtos a partir de R$ 79.",
         "pct:5.00": "Taxa de comissão reduzida para 5% para produtos novos com Entrega Prime"
@@ -616,14 +616,14 @@
         "brl:79.99": "A partir de 01 de outubro de 2026, o valor fixo da comissão por item para produtos de até R$79,99 terá um ajuste de R$0,50, passando de R$4,00 para R$4,50. O percentual de comissão, o subsídio Pix e as demais faixas de valor permanecem com os valores e condições atuais. Confira a seguir:",
         "brl:8.00": "Para produtos com preço abaixo de R$9, o adicional por item é equivalente a metade do preço do produto. Produtos a partir de R$9 mantêm a comissão conforme a variação de valor do item. Com o ajuste da taxa fixa de R$4,00 para R$4,50, esse limite passa de R$8 para R$9;",
         "brl:80.00": "** A Shopee oferece subsídios de frete para todos os vendedores nos valores de R$20 para itens de até R$79,99, R$30 para itens de R$80 a R$199,99 e R$40 para itens acima de R$200.",
-        "brl:81.00": "Vendedores com faturamento anual igual ou superior a R$81 mil devem emitir nota fiscal e ter CNPJ para atender à legislação, veja mais informações sobre essa regra. Após a migração de CPF para CNPJ, o adicional de R$3 não será mais aplicado à loja em até 7 dias úteis após a atualização do status.",
+        "brl:81000.00": "Vendedores com faturamento anual igual ou superior a R$81 mil devem emitir nota fiscal e ter CNPJ para atender à legislação, veja mais informações sobre essa regra. Após a migração de CPF para CNPJ, o adicional de R$3 não será mais aplicado à loja em até 7 dias úteis após a atualização do status.",
         "brl:9.00": "Para produtos com preço abaixo de R$9, o adicional por item é equivalente a metade do preço do produto. Produtos a partir de R$9 mantêm a comissão conforme a variação de valor do item. Com o ajuste da taxa fixa de R$4,00 para R$4,50, esse limite passa de R$8 para R$9;",
         "pct:5.00": "Os produtos contam com subsídios de 5% a 8% dependendo da faixa de preço;",
         "pct:50.00": "Os vendedores também podem contar com cupons de 50% de desconto no frete em compras acima de R$10, conforme os termos e condições aplicáveis.",
         "pct:8.00": "Os produtos contam com subsídios de 5% a 8% dependendo da faixa de preço;"
       },
       "text_hash": "79fe1eb1f5389a01d6fbc42d016baa942dd82daf480d85a9df44bf502604e568",
-      "url": "https://seller.br.shopee.cn/edu/article/26839/Comissao-para-vendedores-CNPJ-e-CPF-em-2027"
+      "url": "https://seller.br.shopee.cn/edu/article/26839/Comissao-para-vendedores-CNPJ-e-CPF-em-2026"
     }
   },
   "version": 1

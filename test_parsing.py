@@ -245,6 +245,40 @@ def test_falha_alerta_por_tempo_e_nao_por_contagem():
     assert e5["numbers"] == bom["numbers"] and e5["text_hash"] == bom["text_hash"]
 
 
+def test_mesma_pagina_com_outro_ano_na_url_nao_e_edicao_nova():
+    """O caso real da Shopee: o site ignora o slug e devolve o artigo de 2026
+    em `.../26839/...-em-2027`. Isso nao pode virar "edicao nova"."""
+    atual = {"title": "Comissao", "text": PAGINA_2026}
+    mesma = {"title": "Comissao", "text": PAGINA_2026}
+    ok, why = ct.is_new_edition(mesma, atual, 2027, SRC, DEFAULTS)
+    assert not ok and "mesmo conteudo" in why, why
+
+
+def test_pagina_diferente_sem_o_ano_nao_e_edicao_nova():
+    atual = {"title": "", "text": PAGINA_2026}
+    outra = {"title": "", "text": PAGINA_2026.replace("14%", "15%")}
+    ok, why = ct.is_new_edition(outra, atual, 2027, SRC, DEFAULTS)
+    assert not ok and "2027" in why, why
+
+
+def test_edicao_nova_de_verdade_e_aceita():
+    atual = {"title": "", "text": PAGINA_2026}
+    nova = {"title": "", "text": PAGINA_2026.replace("2026", "2027").replace("14%", "15%")}
+    ok, why = ct.is_new_edition(nova, atual, 2027, SRC, DEFAULTS)
+    assert ok, why
+
+
+def test_brl_com_mil_e_milhao():
+    """'R$ 500 mil' era lido como R$ 500,00."""
+    achados = {ct.display_key(k) for k in ct.extract_numbers([
+        "venda ate R$ 500 mil com comissao ZERO",
+        "faturamento igual ou superior a R$81 mil",
+        "premio de R$ 1,5 milhão",
+        "custa R$ 19,90 por item",
+    ])}
+    assert achados == {"R$ 500.000,00", "R$ 81.000,00", "R$ 1.500.000,00", "R$ 19,90"}, achados
+
+
 def test_url_do_ano():
     assert ct.url_year("https://s/artigo-em-2026") == 2026
     assert ct.url_year("https://s/artigo") is None
