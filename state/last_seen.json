@@ -550,7 +550,7 @@
       "url": "https://www.mercadolivre.com.br/ajuda/40538"
     },
     "shopee_comissao": {
-      "changed_at": "2026-09-22T20:37:51+00:00",
+      "changed_at": "2026-09-23T13:36:12+00:00",
       "lines": [
         "Anúncios em Lives",
         "Promoções de Desconto",
@@ -590,7 +590,7 @@
         "Para itens de R$80 a R$199,99: Cupons de frete grátis válidos para fretes de até R$30;",
         "Para itens acima de R$200: Cupons de frete grátis válidos para fretes de até R$40.",
         "Os vendedores também podem contar com cupons de 50% de desconto no frete em compras acima de R$10, conforme os termos e condições aplicáveis.",
-        "Próximo: Programa de Frete Grátis",
+        "se_next: Programa de Frete Grátis",
         "Comissão e Frete",
         "Como funciona a cobrança adicional de frete?",
         "Programa de Frete Grátis",
@@ -622,7 +622,7 @@
         "pct:50.00": "Os vendedores também podem contar com cupons de 50% de desconto no frete em compras acima de R$10, conforme os termos e condições aplicáveis.",
         "pct:8.00": "Os produtos contam com subsídios de 5% a 8% dependendo da faixa de preço;"
       },
-      "text_hash": "79fe1eb1f5389a01d6fbc42d016baa942dd82daf480d85a9df44bf502604e568",
+      "text_hash": "18dad0a121ee29c9546e6c81c6fff8a1aea75a53a748126c29b81f925a4d257a",
       "url": "https://seller.br.shopee.cn/edu/article/26839/Comissao-para-vendedores-CNPJ-e-CPF-em-2026"
     }
   },
