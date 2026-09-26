@@ -1,7 +1,7 @@
 {
   "sources": {
     "amazon_fba": {
-      "changed_at": "2026-09-22T20:37:51+00:00",
+      "changed_at": "2026-09-26T13:54:09+00:00",
       "lines": [
         "Fulfillment da Amazon - FBA",
         "Experimente FBA Grátis por 30 dias*",
@@ -21,7 +21,6 @@
         "O FBA - Fulfillment da Amazon está disponível para vendedores parceiros com conta registrada na Amazon.com.br com CNPJ que atenda aos seguintes critérios de elegibilidade:",
         "CUSTOS DE ENVIO",
         "Quanto custa o FBA - Fulfillment da Amazon?",
-        "Confira a campanha em que você vende até R$ 500 mil com comissão ZERO. Clique aqui e saiba mais",
         "O preço do FBA - Fulfillment da Amazon é feito por tarifas e comissões de venda. Confira a seguir quais são os tipos de custos para usar os serviços de logística e centros de distribuição da Amazon:",
         "Tarifas atualizadas em 01/08/2025",
         "Tarifa de logística",
@@ -86,19 +85,18 @@
       ],
       "numbers": {
         "brl:19.00": "Frete grátis: abaixo R$ 19",
-        "brl:500000.00": "Confira a campanha em que você vende até R$ 500 mil com comissão ZERO. Clique aqui e saiba mais",
         "brl:6.00": "*Já é FBA? Pague apenas R$ 6 em tarifa de logística para produtos a partir de R$ 79.",
         "brl:79.00": "*Já é FBA? Pague apenas R$ 6 em tarifa de logística para produtos a partir de R$ 79.",
         "pct:5.00": "Taxa de comissão reduzida para 5% para produtos novos com Entrega Prime"
       },
-      "text_hash": "24eea1472fd94b0fdf85f4680ee2d072935aaaeac694192943eeb8abb97b16d6",
+      "text_hash": "78330af68febeb0aa3f070f685ad07e1d0556995661ab483c2300e132ad50107",
       "url": "https://venda.amazon.com.br/cresca/fba"
     },
     "amazon_precos": {
-      "changed_at": "2026-09-22T20:37:51+00:00",
+      "changed_at": "2026-09-26T13:54:09+00:00",
       "lines": [
         "O custo de vender no marketplace da Amazon varia de acordo com o plano de venda, a categoria de produto e a forma de enviar seus pedidos.",
-        "Conheça aqui quais são os preços para vender na Amazon e comece aproveitando todos os benefícios com mensalidade GRÁTIS por 1 ano!.",
+        "Conheça aqui quais são os preços para vender na Amazon e comece aproveitando todos os benefícios com mensalidade GRÁTIS por 1 ano!",
         "Ofereça FRETE GRÁTIS em produtos a partir de R$ 19 em TODAS as categorias!² Saiba mais",
         "Planos para vender na Amazon",
         "O 1° ano do Plano profissional é GRÁTIS para novos vendedores da Amazon. A partir do 13° mês o preço do plano é de R$ 19,00 mensais.",
@@ -116,7 +114,7 @@
         "Os planos para vender no marketplace da Amazon oferecem liberdade para o vendedor parceiro pagar por venda ou pagar uma mensalidade fixa. Analise a melhor opção para o seu negócio e segmento. Lembrando que você pode alterar ou cancelar a qualquer momento, sem burocracia!",
         "Plano Individual",
         "Plano Profissional",
-        "Registre-se com 1 ano GRÁTIS",
+        "Cadastre-se com 1 ano GRÁTIS",
         "Tarifa",
         "R$ 2,00",
         "por item + comissão",
@@ -203,7 +201,6 @@
         "3. Frete grátis para entregas em até 1 dia",
         "CUSTOS DE ENVIO",
         "Tarifas dos programas logísticos",
-        "É vendedor com coleta no estado de São Paulo? Confira a campanha que dá até 5 meses de comissão ZERO para vendas feitas via logísticas da Amazon. Clique aqui.",
         "Os custos dos programas logísticos variam de acordo com o método de envio que você escolher para trabalhar com seus pedidos. Você pode enviar os produtos por conta própria ou poderá usar o FBA - Logística da Amazon, FBA Onsite - Logística da Amazon ou o DBA - Delivery by Amazon.",
         "Navegue em cada guia para saber mais detalhes sobre os custos de cada tipo de gestão logística:",
         "FBA - Fullfilment by Amazon",
@@ -232,7 +229,7 @@
         "pct:14.00": "14%",
         "pct:15.00": "A Amazon cobra uma comissão para cada item vendido, que varia entre 10% a 15%, dependendo da categoria do produto."
       },
-      "text_hash": "4e4fc57b41c454a29caa6da0bea5f11b6d6e968603ad1a241bc2e2575330e867",
+      "text_hash": "2a544271af750aacc7da350002091698509dcc011d604280e574f2864edc56c2",
       "url": "https://venda.amazon.com.br/precos"
     },
     "mercadolivre_custos": {
