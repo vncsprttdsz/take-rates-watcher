@@ -279,6 +279,89 @@ def test_brl_com_mil_e_milhao():
     assert achados == {"R$ 500.000,00", "R$ 81.000,00", "R$ 1.500.000,00", "R$ 19,90"}, achados
 
 
+def _rodada(prev, texto, url="https://exemplo/2026", hora=0):
+    """Simula o que main() faz com uma leitura: (alertas, estado novo)."""
+    from datetime import datetime, timedelta, timezone
+    now = datetime(2026, 9, 23, 0, 0, tzinfo=timezone.utc) + timedelta(hours=hora)
+    s = snap(texto)
+    s["url"] = url
+    evs = ct.compare(SRC, prev, s)
+    if evs and not ct.is_confirmed(prev, s):
+        return [], ct.with_pending(prev, s, now)
+    return evs, ct.persisted(s, prev, bool(evs), now)
+
+
+def test_oscilacao_de_uma_rodada_nao_alerta():
+    """Incidentes reais de set/2026: a pagina carregou so o menu / com glitch
+    e voltou ao normal na rodada seguinte. Antes: 2 alertas falsos cada."""
+    from datetime import datetime, timezone
+    base = ct.persisted(snap(PAGINA_2026), {}, True,
+                        datetime(2026, 9, 22, tzinfo=timezone.utc))
+    so_menu = "Comissao e Frete\nAnuncios em Lives\n" + "menu " * 100
+    evs, st = _rodada(base, so_menu, hora=1)
+    assert evs == [] and "pending" in st
+    evs, st = _rodada(st, PAGINA_2026, hora=2)
+    assert evs == [] and "pending" not in st
+    assert st == base, "estado deveria voltar a ser exatamente o confirmado"
+
+
+def test_mudanca_que_persiste_alerta_uma_vez():
+    from datetime import datetime, timezone
+    base = ct.persisted(snap(PAGINA_2026), {}, True,
+                        datetime(2026, 9, 22, tzinfo=timezone.utc))
+    nova = PAGINA_2026.replace("14% por item", "15% por item")
+    evs, st = _rodada(base, nova, hora=1)
+    assert evs == [], "alertou na primeira leitura"
+    evs, st = _rodada(st, nova, hora=3)
+    assert [e["kind"] for e in evs] == ["numeros"], evs
+    evs, st = _rodada(st, nova, hora=5)
+    assert evs == [], "repetiu o alerta"
+
+
+def test_pendente_substituido_por_outra_mudanca():
+    """A->B->C->C: B nunca confirmou; o alerta e de A para C."""
+    from datetime import datetime, timezone
+    base = ct.persisted(snap(PAGINA_2026), {}, True,
+                        datetime(2026, 9, 22, tzinfo=timezone.utc))
+    b = PAGINA_2026.replace("14% por item", "15% por item")
+    c = PAGINA_2026.replace("14% por item", "16% por item")
+    _, st = _rodada(base, b, hora=1)
+    evs, st = _rodada(st, c, hora=2)
+    assert evs == []
+    evs, st = _rodada(st, c, hora=3)
+    num = evs[0]
+    assert [v for v, _ in num["entrou"]] == ["16%"] and [v for v, _ in num["saiu"]] == ["14%"]
+
+
+def test_titulo_com_ano_do_slug_nao_conta_como_edicao_nova():
+    """Incidente de 24/09: o titulo da aba vem do slug (`...-em-2027`)."""
+    atual = {"title": "Comissao em 2026", "text": PAGINA_2026}
+    glitch = {"title": "Comissao em 2027",
+              "text": PAGINA_2026.replace("Programa de Frete", "Programa  de  Frete!")}
+    ok, why = ct.is_new_edition(glitch, atual, 2027, SRC, DEFAULTS)
+    assert not ok and "2027" in why, why
+
+
+def test_imagem_trocada_vira_linha_e_muda_o_hash():
+    imgs_a = [{"src": "https://cdn/file/aaa.png?x=1", "alt": "tabela", "w": 800, "h": 400}]
+    imgs_b = [{"src": "https://cdn/file/bbb.png?x=1", "alt": "tabela", "w": 800, "h": 400}]
+    imgs_a2 = [{"src": "https://cdn/file/aaa.png?x=2", "alt": "tabela", "w": 800, "h": 400}]
+    assert ct.image_lines(imgs_a) == ["[imagem] https://cdn/file/aaa.png"]
+    assert ct.image_lines(imgs_a) == ct.image_lines(imgs_a2), "query da CDN nao e mudanca"
+    src = dict(SRC, track_images=True)
+    res = lambda imgs: {"url": "u", "title": "", "text": PAGINA_2026, "images": imgs}
+    sa = ct.snapshot(src, res(imgs_a), DEFAULTS)
+    sb = ct.snapshot(src, res(imgs_b), DEFAULTS)
+    assert sa["text_hash"] != sb["text_hash"]
+    assert sa["numbers"] == sb["numbers"]
+    ev = ct.compare(src, sa, sb)
+    assert [e["kind"] for e in ev] == ["texto"]
+    assert "Imagem da pagina trocada" in ct.render_event(ev[0])
+    # sem track_images, imagem nao entra
+    assert ct.snapshot(SRC, res(imgs_a), DEFAULTS)["text_hash"] == \
+           ct.snapshot(SRC, res(imgs_b), DEFAULTS)["text_hash"]
+
+
 def test_url_do_ano():
     assert ct.url_year("https://s/artigo-em-2026") == 2026
     assert ct.url_year("https://s/artigo") is None

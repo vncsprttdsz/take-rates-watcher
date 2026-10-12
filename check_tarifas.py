@@ -101,11 +101,21 @@ CLEAN_JS = """
                'footer,[role="contentinfo"],[aria-hidden="true"]';
   document.querySelectorAll(kill).forEach(e => e.remove());
   const cands = ['main', '[role="main"]', 'article', '#content', '.content', 'body'];
+  let root = document.body;
   for (const sel of cands) {
     const el = document.querySelector(sel);
-    if (el && (el.innerText || '').trim().length > 300) return el.innerText;
+    if (el && (el.innerText || '').trim().length > 300) { root = el; break; }
   }
-  return document.body ? document.body.innerText : '';
+  if (!root) return {text: '', images: []};
+  // Imagens de conteudo (icone e avatar ficam de fora pelo tamanho). Tabela de
+  // tarifa publicada como imagem e invisivel para o innerText.
+  const images = Array.from(root.querySelectorAll('img')).map(img => ({
+    src: img.currentSrc || img.src || img.getAttribute('data-src') || '',
+    alt: (img.alt || '').trim().slice(0, 120),
+    w: img.naturalWidth || img.width || 0,
+    h: img.naturalHeight || img.height || 0,
+  })).filter(i => i.src && !i.src.startsWith('data:') && i.w >= 200);
+  return {text: root.innerText || '', images: images};
 }
 """
 
@@ -284,7 +294,9 @@ def fetch(page, url: str, settle_ms: int) -> dict:
         pass
 
     try:
-        text = page.evaluate(CLEAN_JS) or ""
+        extracted = page.evaluate(CLEAN_JS) or {}
+        text = extracted.get("text") or ""
+        images = extracted.get("images") or []
         title = page.title()
         final_url = page.url
     except PWError as exc:
@@ -295,6 +307,7 @@ def fetch(page, url: str, settle_ms: int) -> dict:
         "url": final_url,
         "title": title,
         "text": text,
+        "images": images,
         "links": links,
     }
 
@@ -377,7 +390,9 @@ def is_new_edition(cand: dict, current: dict, year: int, src: dict,
     h_cur = hash_lines(relevant_lines(current["text"], keywords, ignores))
     if h_cand == h_cur:
         return False, "mesmo conteudo da pagina atual (o site ignora o texto da URL)"
-    if not re.search(rf"\b{year}\b", f"{cand.get('title', '')}\n{cand['text']}"):
+    # So o corpo conta: o titulo da aba da Shopee e montado a partir do slug,
+    # entao `...-em-2027` vira um titulo com "2027" mesmo sendo o artigo de 2026.
+    if not re.search(rf"\b{year}\b", cand["text"]):
         return False, f"conteudo nao menciona {year}"
     return True, "ok"
 
@@ -601,7 +616,10 @@ def render_event(ev: dict) -> str:
         return "\n".join(parts)
 
     if ev["kind"] == "texto":
-        parts = [f"📝 {head}", "<i>Texto mudou, mas nenhum valor mudou</i>", ""]
+        so_imagem = ev["diff"] and all(IMAGE_PREFIX in l for l in ev["diff"])
+        aviso = ("Imagem da pagina trocada — pode ser a tabela de tarifas, confira"
+                 if so_imagem else "Texto mudou, mas nenhum valor mudou")
+        parts = [f"📝 {head}", f"<i>{aviso}</i>", ""]
         for line in ev["diff"]:
             parts.append(f"<code>{esc(line[:200])}</code>")
         parts.append(f'\n🔗 <a href="{esc(ev["url"])}">ver pagina</a>')
@@ -726,10 +744,31 @@ def send_telegram(text: str) -> bool:
 # ============================================================
 
 
+IMAGE_PREFIX = "[imagem] "
+
+
+def image_lines(images: List[dict]) -> List[str]:
+    """Uma linha por imagem de conteudo, pelo endereco sem query string.
+
+    Entra no hash como qualquer linha: se a Shopee trocar a imagem da tabela de
+    comissao, o arquivo novo tem outro endereco e a troca vira alerta. A query
+    fica de fora porque CDN costuma pendurar ali assinatura e redimensionamento
+    que mudam a cada carregamento.
+    """
+    out: List[str] = []
+    for img in images:
+        line = IMAGE_PREFIX + canon_url(img.get("src", ""))
+        if line not in out:
+            out.append(line)
+    return out
+
+
 def snapshot(src: dict, res: dict, defaults: dict) -> dict:
     keywords, ignores = build_filters(defaults, src)
     lines = relevant_lines(res["text"], keywords, ignores)
     numbers = extract_numbers(lines)
+    if src.get("track_images"):
+        lines += image_lines(res.get("images", []))
     return {
         "url": res["url"],
         "titulo": res["title"],
@@ -752,6 +791,37 @@ def persisted(snap: dict, prev: dict, changed: bool, now: datetime) -> dict:
         else prev["changed_at"]
     )
     return entry
+
+
+def change_key(snap: dict) -> List[str]:
+    return [snap["text_hash"], canon_url(snap["url"])]
+
+
+def with_pending(prev: dict, snap: dict, now: datetime) -> dict:
+    """Estado confirmado intacto + a leitura nova anotada como pendente.
+
+    Guarda so a chave (hash + URL), nao a leitura inteira: para confirmar basta
+    saber se a proxima rodada ve a MESMA coisa.
+    """
+    entry = {k: prev[k] for k in PERSIST_KEYS if k in prev}
+    entry["pending"] = {
+        "key": change_key(snap),
+        "seen_at": now.isoformat(timespec="seconds"),
+    }
+    return entry
+
+
+def is_confirmed(prev: dict, snap: dict) -> bool:
+    """A mudanca de agora e a mesma que a rodada anterior viu?
+
+    Alerta so sai na segunda leitura igual. As paginas oscilam: em set/2026 a
+    Shopee carregou uma vez so o menu (sumiram 22 valores) e outra vez com uma
+    chave de traducao crua no lugar de "Proximo:", e nos dois casos voltou ao
+    normal na rodada seguinte - 4 alertas falsos. Mudanca de tarifa de verdade
+    persiste, e com ~9 rodadas por dia confirmar custa 1 a 3 horas.
+    """
+    pending = prev.get("pending") or {}
+    return pending.get("key") == change_key(snap)
 
 
 def register_failure(prev: dict, erro: str, now: datetime) -> Tuple[dict, bool, float]:
@@ -865,12 +935,26 @@ def main() -> int:
                     page.screenshot(path=str(DEBUG_DIR / f"{sid}.png"), full_page=True)
                 except PWError:
                     pass
-                print(f"  valores: {', '.join(sorted(display_key(k) for k in snap['numbers']))}")
+                valores = ", ".join(sorted(display_key(k) for k in snap["numbers"]))
+                imgs = res.get("images", [])
+                print(f"  valores: {valores}")
+                for img in imgs:
+                    print(f"  imagem {img['w']}x{img['h']} alt={img['alt']!r} {img['src']}")
                 print(f"  -> {out}")
+                # Anotacao aparece na pagina da execucao e e lida pela API do
+                # GitHub - sem precisar baixar log nem artifact.
+                if os.environ.get("GITHUB_ACTIONS"):
+                    msg = (f"URL: {snap['url']}\nTITULO: {snap['titulo']}\n"
+                           f"{len(snap['lines'])} linhas, valores: {valores}\n"
+                           f"{len(imgs)} imagens:\n" + "\n".join(
+                               f"{i['w']}x{i['h']} alt={i['alt']!r} {i['src']}" for i in imgs[:15]))
+                    msg = msg[:3500].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+                    print(f"::notice title=debug {sid}::{msg}")
                 continue
 
             is_baseline = args.seed or not prev.get("text_hash")
             novos: List[dict] = []
+            pendente = False
             if is_baseline:
                 print("  baseline registrada (sem comparacao)")
                 baselines.append({
@@ -881,8 +965,16 @@ def main() -> int:
                 })
             else:
                 novos = compare(src, prev, snap)
-                for ev in novos:
-                    print(f"  MUDOU: {ev['kind']}")
+                if novos and not is_confirmed(prev, snap):
+                    kinds = ", ".join(e["kind"] for e in novos)
+                    print(f"  mudanca vista pela 1a vez ({kinds}); "
+                          "so alerta se a proxima rodada confirmar")
+                    novos = []
+                    pendente = True
+                else:
+                    pendente = False
+                    for ev in novos:
+                        print(f"  MUDOU (confirmado): {ev['kind']}")
                 events.extend(novos)
                 if prev.get("failure_alerted"):
                     events.append({
@@ -891,8 +983,11 @@ def main() -> int:
                     })
 
             if not args.dry_run:
-                mudou = is_baseline or any(e["kind"] in TARIFA_KINDS for e in novos)
-                state["sources"][sid] = persisted(snap, prev, mudou, now)
+                if not is_baseline and pendente:
+                    state["sources"][sid] = with_pending(prev, snap, now)
+                else:
+                    mudou = is_baseline or any(e["kind"] in TARIFA_KINDS for e in novos)
+                    state["sources"][sid] = persisted(snap, prev, mudou, now)
 
         context.close()
         browser.close()

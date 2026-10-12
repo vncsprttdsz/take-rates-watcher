@@ -36,9 +36,21 @@ A cada rodada, para cada página:
    | Um número (`%` ou `R$`) | 🚨 **Tarifa mudou** | comissão de 14% → 15% |
    | Só o texto, nenhum número | 📝 Mudança de regra | "por item" → "por pedido" |
    | A própria URL da página | 📅 Edição nova | artigo de 2026 → 2027 |
+   | Uma imagem do conteúdo¹ | 📝 Imagem trocada | tabela publicada como imagem |
    | Nada | *silêncio* | |
 
-4. **Manda um Telegram** com o antes/depois e o link, e commita o estado novo.
+   ¹ Só nas fontes com `track_images: true`. Serve para tabela de tarifa
+   publicada como imagem, que é invisível para a leitura de texto. A imagem é
+   identificada pelo endereço do arquivo: tabela nova é arquivo novo.
+
+4. **Espera a confirmação.** Uma mudança só vira alerta quando a rodada
+   seguinte lê a mesma coisa. Páginas oscilam: em setembro de 2026 a Shopee
+   carregou uma vez só o menu (sumiram os 22 valores) e outra vez com uma chave
+   de tradução crua no lugar de "Próximo:", e nos dois casos estava normal
+   uma hora depois. Sem a confirmação, foram 4 alertas falsos. Mudança de
+   tarifa de verdade persiste, e com 9 rodadas por dia confirmar custa de 1 a
+   3 horas.
+5. **Manda um Telegram** com o antes/depois e o link, e commita o estado novo.
 
 Números equivalentes não viram alerta: `14%`, `14,0 %` e `14.00%` são lidos
 como o mesmo valor, e o mesmo vale para `R$ 1.000,00` vs `R$ 1000`. Banner
@@ -54,25 +66,29 @@ A URL da Shopee tem o ano embutido:
                 ^^^^^                                         ^^^^
 ```
 
-O detalhe é que **o id do artigo (`26839`) também muda** quando eles publicam
-a tabela do ano seguinte — trocar só `2026` por `2027` não acha nada. Por
-isso a busca tem três camadas, nesta ordem (`sources.yaml`, chave
-`year_in_url`):
+Trocar só o ano não funciona, por dois motivos. **O artigo do ano seguinte é
+outro artigo, com outro id** — e **o site ignora tudo o que vem depois do
+id**: `.../26839/...-em-2027` devolve o artigo de 2026, com HTTP 200 e título
+de aba "…em 2027" (o título é montado a partir do link). Uma versão anterior
+deste monitor tentava esse atalho e aceitou a página falsa, gerando alerta de
+"edição nova" à toa. Por isso a Shopee não tem `url_templates` no
+`sources.yaml`, e a busca tem duas camadas (chave `year_in_url`):
 
-1. **Templates de URL** — tenta `.../26839/...-em-2027`. Barato, e funciona no
-   caso (improvável) de eles manterem o id.
-2. **Links da própria página** — varre os `<a>` da página atual atrás de um
+1. **Links da própria página** — varre os `<a>` da página atual atrás de um
    link cujo texto ou URL case com `comiss|tarifa|taxa` **e** tenha um ano
    maior. É o mecanismo que costuma acertar: quando a Shopee publica o artigo
    novo, o antigo passa a linkar para ele. Se você descobrir a URL do índice
    de categoria do Seller Education Hub, coloque em `link_discovery.extra_pages`
    — aí a detecção fica independente de a página velha linkar a nova.
-3. **Última URL que funcionou** — guardada no estado. Se nada novo aparecer,
+2. **Última URL que funcionou** — guardada no estado. Se nada novo aparecer,
    continua monitorando a de sempre.
 
-Qualquer candidato só é aceito se a página carregar de verdade (`HTTP < 400`,
-texto acima de `min_chars` e casando com `validate_regex`) — assim um 404
-estilizado ou uma home genérica não vira "a nova fonte de tarifas".
+Um candidato a edição nova só é aceito se, além de carregar (`HTTP < 400`,
+texto acima de `min_chars`, casando com `validate_regex`), tiver **conteúdo
+diferente da página atual** e **mencionar o ano novo no corpo do texto** — o
+título da aba não conta. E, como qualquer mudança, a troca de edição precisa
+ser vista em duas rodadas seguidas para virar alerta. (`url_templates`
+continua disponível para sites que de fato usam o ano no endereço.)
 
 A busca pelo ano seguinte começa em **setembro** (`year_lookahead_from_month`)
 e passa a rodar o ano todo se o calendário virar sem a página ter mudado —
@@ -131,8 +147,8 @@ calibrado. Se vier vazio ou com números que não têm nada a ver, vá para
 [Calibrando](#calibrando).
 
 Depois disso ele roda sozinho e só fala quando alguma coisa muda — rodar 9
-vezes não gera 9 alertas: uma mudança é notificada uma vez, na primeira rodada
-que a vê.
+vezes não gera 9 alertas: uma mudança é notificada uma vez, na rodada que a
+confirma (a segunda que a vê).
 
 ---
 
@@ -189,8 +205,10 @@ python check_tarifas.py --debug      # só mostra o que extraiu, não grava nada
 | `--config` / `--state` | Aponta para outro `sources.yaml` / arquivo de estado. |
 
 Os três primeiros também estão no `Run workflow` do GitHub, no seletor
-**modo** — dá para calibrar direto pelo Actions, sem instalar nada. No modo
-`debug` o que foi extraído fica disponível como artifact da execução.
+**modo**, e o campo **fonte** faz o papel do `--only` — dá para calibrar
+direto pelo Actions, sem instalar nada. No modo `debug`, o resumo de cada
+fonte (valores lidos e imagens encontradas) aparece como anotação na página
+da execução, e o texto completo + screenshot ficam no artifact `extracao`.
 
 Os testes do parser (não precisam de rede) rodam com:
 
@@ -219,6 +237,12 @@ contador, nome de campanha). Rode `--debug`, ache a linha em
 **Entrou muito número irrelevante** (preço de produto de exemplo, número de
 telefone). Deixe `keywords` mais restrito para aquela fonte — a chave aceita
 override por fonte.
+
+**A tabela de tarifas é uma imagem.** Rode o modo `debug` para aquela fonte:
+a anotação lista as imagens do conteúdo (tamanho, texto alternativo,
+endereço). Se a tabela estiver lá, ligue `track_images: true` na fonte e
+rode o modo `seed` só para ela (campo **fonte**), para a baseline passar a
+incluir a imagem.
 
 **Quer monitorar outra página.** Copie um bloco de `sources`, troque `id`,
 `url` e `validate_regex`. Não precisa mudar mais nada; o `id` é o que liga a

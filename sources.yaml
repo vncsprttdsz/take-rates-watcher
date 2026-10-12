@@ -53,6 +53,10 @@ defaults:
     - '(?i)\bcookies?\b'
     - '(?i)^\s*©'
     - '(?i)todos os direitos reservados'
+    # Link "Proximo:/Anterior:" no rodape de artigo. Em set/2026 a Shopee
+    # serviu "se_next:" (chave de traducao crua) no lugar, e voltou 1h depois.
+    - '(?i)^\s*(pr(o|ó)ximo|anterior)\s*:'
+    - '^\s*[a-z]+(_[a-z]+)+\s*:'
 
   # Espera apos o DOM carregar, para o JS terminar de pintar a tabela.
   settle_ms: 3500
@@ -75,11 +79,11 @@ sources:
     # seguinte. `year_in_url` liga esse comportamento.
     year_in_url: true
 
-    # Tentativas diretas, na ordem. {year} vira 2027, 2026, ... O id do artigo
-    # (26839) provavelmente MUDA no artigo do ano novo, entao esses templates
-    # sao so a aposta barata; quem costuma acertar e o `link_discovery` abaixo.
-    url_templates:
-      - https://seller.br.shopee.cn/edu/article/26839/Comissao-para-vendedores-CNPJ-e-CPF-em-{year}
+    # SEM `url_templates` de proposito. O site da Shopee roteia pelo id do
+    # artigo e ignora o resto da URL: `.../26839/...-em-2027` devolve o artigo
+    # de 2026 com HTTP 200. Template com {year} nunca acharia o artigo novo
+    # (que tem outro id) e so produzia falsa "edicao nova" (set/2026). Quem
+    # acha a edicao nova e o `link_discovery` abaixo.
 
     # A partir de que mes comeca a procurar o artigo do ano seguinte.
     # 9 = setembro: a Shopee costuma publicar a tabela nova no ultimo

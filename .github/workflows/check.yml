@@ -38,6 +38,10 @@ on:
         default: "normal"
         type: choice
         options: [normal, debug, dry-run, seed]
+      fonte:
+        description: "Rodar so uma fonte (id do sources.yaml, ex.: shopee_comissao). Vazio = todas"
+        required: false
+        default: ""
 
 # Necessario para o job commitar state/last_seen.json de volta no repo.
 permissions:
@@ -78,13 +82,26 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
 
+      # O apt do runner as vezes trava: em 07/10/2026 este passo ficou 15 min
+      # parado ate o job estourar o timeout. Cada tentativa tem 4 min; uma
+      # instalacao normal leva menos de 1.
       - name: Instalar Chromium
         if: steps.cache-browser.outputs.cache-hit != 'true'
-        run: playwright install --with-deps chromium
+        run: |
+          for t in 1 2 3; do
+            timeout 240 playwright install --with-deps chromium && exit 0
+            echo "::warning::instalacao do Chromium falhou/travou (tentativa $t)"; sleep 15
+          done
+          exit 1
 
       - name: Instalar dependencias de sistema do Chromium
         if: steps.cache-browser.outputs.cache-hit == 'true'
-        run: playwright install-deps chromium
+        run: |
+          for t in 1 2 3; do
+            timeout 240 playwright install-deps chromium && exit 0
+            echo "::warning::apt falhou/travou (tentativa $t)"; sleep 15
+          done
+          exit 1
 
       - name: Rodar testes do parser
         run: python test_parsing.py
@@ -94,12 +111,15 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           MODO: ${{ github.event.inputs.modo || 'normal' }}
+          FONTE: ${{ github.event.inputs.fonte || '' }}
         run: |
+          ARGS=()
+          if [ -n "$FONTE" ]; then ARGS+=(--only "$FONTE"); fi
           case "$MODO" in
-            debug)   python check_tarifas.py --debug ;;
-            dry-run) python check_tarifas.py --dry-run ;;
-            seed)    python check_tarifas.py --seed ;;
-            *)       python check_tarifas.py ;;
+            debug)   python check_tarifas.py --debug "${ARGS[@]}" ;;
+            dry-run) python check_tarifas.py --dry-run "${ARGS[@]}" ;;
+            seed)    python check_tarifas.py --seed "${ARGS[@]}" ;;
+            *)       python check_tarifas.py "${ARGS[@]}" ;;
           esac
 
       - name: Guardar o que foi extraido (modo debug)
