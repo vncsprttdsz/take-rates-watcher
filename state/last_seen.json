@@ -547,7 +547,7 @@
       "url": "https://www.mercadolivre.com.br/ajuda/40538"
     },
     "shopee_comissao": {
-      "changed_at": "2026-09-25T15:34:16+00:00",
+      "changed_at": "2026-10-12T12:57:09+00:00",
       "lines": [
         "Anúncios em Lives",
         "Promoções de Desconto",
@@ -592,7 +592,10 @@
         "Programa de Frete Grátis",
         "Como funciona a Política de Comissão para vendedores CPF?",
         "Programa Frete Grátis para todos",
-        "Programa de Frete Grátis"
+        "Programa de Frete Grátis",
+        "[imagem] https://down-br.img.susercontent.com/br-11134141-820lo-mts4be67phj5d9",
+        "[imagem] https://down-br.img.susercontent.com/br-11134141-820lp-mt9kp6hntiwz98",
+        "[imagem] https://down-br.img.susercontent.com/br-11134141-820l9-mts4be6565tu04"
       ],
       "numbers": {
         "brl:0.50": "A partir de 01 de outubro de 2026, o valor fixo da comissão por item para produtos de até R$79,99 terá um ajuste de R$0,50, passando de R$4,00 para R$4,50. O percentual de comissão, o subsídio Pix e as demais faixas de valor permanecem com os valores e condições atuais. Confira a seguir:",
@@ -618,7 +621,7 @@
         "pct:50.00": "Os vendedores também podem contar com cupons de 50% de desconto no frete em compras acima de R$10, conforme os termos e condições aplicáveis.",
         "pct:8.00": "Os produtos contam com subsídios de 5% a 8% dependendo da faixa de preço;"
       },
-      "text_hash": "c5d39a00c33fe229549040e3982408b2a61ef326e0c6fb85ed70c421ca9d4353",
+      "text_hash": "48874aa878427bb6db73035579a31ad982e8efbe242e739a16830252ea8d39d5",
       "url": "https://seller.br.shopee.cn/edu/article/26839/Comissao-para-vendedores-CNPJ-e-CPF-em-2026"
     }
   },
