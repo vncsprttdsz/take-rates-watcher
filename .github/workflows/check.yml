@@ -56,7 +56,10 @@ concurrency:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    # Versao fixa: o ubuntu-latest vira Ubuntu 26 a partir de 19/10/2026, e o
+    # `playwright install-deps` so conhece as versoes que existiam quando a
+    # versao do Playwright saiu. Trocar de Ubuntu junto com o Playwright.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
 
     steps:

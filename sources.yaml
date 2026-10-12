@@ -106,6 +106,12 @@ sources:
     # Impede que um 404 bonitinho ou uma home generica vire "a nova fonte".
     validate_regex: '(?i)comiss'
 
+    # As tabelas de comissao CNPJ e CPF sao IMAGENS (1620x866, confirmadas no
+    # debug de 12/10/2026) - invisiveis para a leitura de texto. Com isto, o
+    # endereco de cada imagem do artigo entra na comparacao: tabela nova e
+    # arquivo novo, e vira alerta "imagem trocada".
+    track_images: true
+
   # --------------------------------------------------------------------
   # MERCADO LIVRE
   # --------------------------------------------------------------------
