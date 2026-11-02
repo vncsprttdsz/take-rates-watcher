@@ -31,14 +31,17 @@ Atualizacao: 03/09/2026
 """
 
 
-def snap(texto):
+def snap(texto, headings=(), tabelas=()):
+    """Mesmo formato do snapshot() real, a partir de texto puro."""
     kw, ig = ct.build_filters(DEFAULTS, SRC)
-    linhas = ct.relevant_lines(texto, kw, ig)
+    linhas, secoes = ct.relevant_lines_sections(texto, kw, ig, list(headings))
     return {
         "url": "https://exemplo/2026",
         "numbers": ct.extract_numbers(linhas),
         "text_hash": ct.hash_lines(linhas),
         "lines": linhas,
+        "sections": secoes,
+        "tables": ct.normalize_tables(list(tabelas)),
     }
 
 
@@ -431,6 +434,139 @@ def test_versao_esquecida_depois_de_14_dias_volta_a_alertar():
     assert evs == [] and "pending" in st, "versao velha deveria contar como novidade"
     evs, st = _rodada_v(st, PAG_A, depois + timedelta(hours=2))
     assert evs, "rollback depois da janela nao alertou"
+
+
+TAB_ML = {"title": "Custos dos Envios", "rows": [
+    {"h": True, "c": ["Preço do produto"] * 4},
+    {"h": True, "c": ["Peso", "R$ 0 a R$ 18,99", "R$ 19 a R$ 48,99", "R$ 79 a R$ 99,99"]},
+    {"h": False, "c": ["Até 0,3 kg", "R$ 5,65", "R$ 6,85", "R$ 12,95"]},
+    {"h": False, "c": ["De 0,3 a 0,5 kg", "R$ 5,95", "R$ 6,95", "R$ 13,85"]},
+]}
+
+
+def _tab(mudar=None, extra=None):
+    import copy
+    t = copy.deepcopy(TAB_ML)
+    for (i, j), v in (mudar or {}).items():
+        t["rows"][i]["c"][j] = v
+    if extra:
+        t["rows"].append({"h": False, "c": extra})
+    return t
+
+
+def test_tabela_normalizada_com_cabecalho_em_dois_niveis():
+    t = ct.normalize_tables([TAB_ML])[0]
+    assert t["titulo"] == "Custos dos Envios"
+    # o grupo "Preco do produto" cobre todas as colunas e sai do nome
+    assert t["colunas"] == ["Peso", "R$ 0 a R$ 18,99", "R$ 19 a R$ 48,99", "R$ 79 a R$ 99,99"]
+    assert [r[0] for r in t["linhas"]] == ["Até 0,3 kg", "De 0,3 a 0,5 kg"]
+
+
+def test_celula_alterada_diz_linha_coluna_antes_agora():
+    a = ct.normalize_tables([_tab()])[0]
+    b = ct.normalize_tables([_tab({(2, 3): "R$ 13,60"})])[0]
+    d = ct.diff_table(a, b)
+    assert d["celulas"] == [{"linha": "Até 0,3 kg", "coluna": "R$ 79 a R$ 99,99",
+                             "antes": "R$ 12,95", "agora": "R$ 13,60", "delta": "+5,0%"}], d
+    assert d["total"] == 6
+
+
+def test_linha_nova_na_tabela():
+    a = ct.normalize_tables([_tab()])[0]
+    b = ct.normalize_tables([_tab(extra=["De 0,5 a 1 kg", "R$ 6,05", "R$ 7,15", "R$ 14,45"])])[0]
+    d = ct.diff_table(a, b)
+    assert d["linhas_novas"] == ["De 0,5 a 1 kg"] and not d["celulas"]
+
+
+def test_tabela_igual_nao_gera_diferenca():
+    a = ct.normalize_tables([_tab()])[0]
+    assert ct.diff_table(a, ct.normalize_tables([_tab()])[0]) is None
+
+
+def test_alerta_de_tabela_nao_repete_a_linha_como_frase():
+    """A linha da tabela tambem esta no texto; nao pode aparecer duas vezes."""
+    txt_a = "Custos de envio\nAté 0,3 kg R$ 5,65 R$ 6,85 R$ 12,95\n" + PAGINA_2026
+    txt_b = "Custos de envio\nAté 0,3 kg R$ 5,65 R$ 6,85 R$ 13,60\n" + PAGINA_2026
+    a, b = snap(txt_a, tabelas=[_tab()]), snap(txt_b, tabelas=[_tab({(2, 3): "R$ 13,60"})])
+    ev = ct.compare(SRC, a, b)[0]
+    assert ev["kind"] == "numeros"
+    assert ev["explicacao"]["pares"] == [], ev["explicacao"]["pares"]
+    msg = ct.render_event(ev)
+    assert "Até 0,3 kg · R$ 79 a R$ 99,99: R$ 12,95 → <b>R$ 13,60</b> (+5,0%)" in msg, msg
+
+
+def test_frase_alterada_vira_par_antes_agora_com_secao():
+    a = snap("Parcelamento\nPor uma tarifa de 1,5% sobre as vendas.\nTaxa fixa de R$ 2,00.",
+             headings=["Parcelamento"])
+    b = snap("Parcelamento\nPor uma tarifa de 2,5% sobre as vendas.\nTaxa fixa de R$ 2,00.",
+             headings=["Parcelamento"])
+    ex = ct.compare(SRC, a, b)[0]["explicacao"]
+    assert len(ex["pares"]) == 1 and ex["pares"][0]["secao"] == "Parcelamento"
+    assert ex["resumo"] == ["1,5% → 2,5%"]
+    antes, agora = ct.inline_diff(ex["pares"][0]["antes"], ex["pares"][0]["agora"])
+    assert "<s>1,5%</s>" in antes and "<b>2,5%</b>" in agora
+
+
+def test_valor_que_continua_em_outro_lugar_ainda_conta_como_tarifa():
+    """1,5% -> 2,5% numa frase, com outro 1,5% em outra: antes era 'texto'."""
+    base = "Amazon Vantagens: tarifa de 1,5%.\nAmazon Mais Vantagens: tarifa de {}."
+    a, b = snap(base.format("1,5%")), snap(base.format("2,5%"))
+    a_b = ct.compare(SRC, a, b)
+    assert [e["kind"] for e in a_b] == ["numeros"]
+    volta = ct.compare(SRC, b, a)  # 2,5% -> 1,5%: o conjunto de valores fica igual
+    assert [e["kind"] for e in volta] == ["numeros"], [e["kind"] for e in volta]
+
+
+def test_frase_que_so_mudou_de_lugar_nao_e_mudanca():
+    pares, rem, add = ct.pair_lines(["a tarifa e 1%", "b custo R$ 2", "c taxa 3%"],
+                                    ["c taxa 3%", "a tarifa e 1%", "b custo R$ 2"])
+    assert pares == [] and rem == [] and add == []
+
+
+def test_alerta_prioriza_o_que_tem_valor():
+    a = snap("Ao iniciar, tarifa de 1,5% para produtos a partir de R$ 40.\nSaiba mais sobre os planos")
+    b = snap("Mais Vantagens: plano completo, tarifa de 2,5% e desconto Pix de 5%, inscricao automatica.\n"
+             "Conheca os planos de pagamento")
+    msg = ct.render_event(ct.compare(SRC, a, b)[0])
+    pos = lambda t: msg.index(t)
+    assert pos("R$ 40") < pos("Saiba mais") and pos("2,5%") < pos("Conheca"), msg
+
+
+def test_secoes_e_tabelas_nao_mexem_no_hash():
+    """Guardar a estrutura nao pode, sozinho, disparar mudanca."""
+    a = snap(PAGINA_2026)
+    b = snap(PAGINA_2026, headings=["Comissao para vendedores CNPJ e CPF em 2026"], tabelas=[_tab()])
+    assert a["text_hash"] == b["text_hash"]
+    assert ct.compare(SRC, a, b) == []
+
+
+def test_migracao_de_formato_adota_sem_alertar_e_aprende_as_versoes():
+    """Linhas deixaram de ser cortadas em 300 chars: o hash muda sem a pagina
+    mudar. Por 12h a fonte adota as leituras calada, inclusive as duas versoes
+    de um site que alterna, e depois volta ao normal."""
+    from datetime import datetime, timedelta, timezone
+    t = datetime(2026, 11, 2, 12, tzinfo=timezone.utc)
+    velho = {k: v for k, v in snap(PAG_A).items() if k in ("url", "numbers", "text_hash", "lines")}
+    velho["text_hash"] = "hash-do-formato-antigo"
+    st = velho
+    for i, pag in enumerate([PAG_A, PAG_B, PAG_A, PAG_B]):
+        quando = t + timedelta(hours=2 * i)
+        ate = ct.migration_deadline(st, quando)
+        assert ate, f"deveria estar migrando na leitura {i}"
+        st = ct.migrate_entry(st, snap(pag), quando, ate)
+        st["formato"] = ct.LINE_FORMAT
+    depois = t + timedelta(hours=ct.MIGRATION_HOURS + 1)
+    assert ct.migration_deadline(st, depois) is None
+    s_b = snap(PAG_B)
+    assert ct.is_known_variant(st, s_b, depois) or st["text_hash"] == s_b["text_hash"]
+    s_a = snap(PAG_A)
+    assert ct.is_known_variant(st, s_a, depois) or st["text_hash"] == s_a["text_hash"]
+
+
+def test_fonte_ja_no_formato_novo_nao_migra():
+    from datetime import datetime, timezone
+    st = dict(snap(PAG_A), formato=ct.LINE_FORMAT)
+    assert ct.migration_deadline(st, datetime(2026, 11, 2, tzinfo=timezone.utc)) is None
 
 
 def test_url_do_ano():

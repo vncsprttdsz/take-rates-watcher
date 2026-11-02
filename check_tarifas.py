@@ -26,7 +26,7 @@ import os
 import re
 import sys
 import unicodedata
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -61,7 +61,17 @@ NAV_TIMEOUT_MS = 45_000
 # da notificacao; o hash e calculado sobre todas elas, entao o corte tem que
 # ser generoso o bastante para nao decapitar uma tabela de tarifas.
 MAX_LINES_STORED = 600
-MAX_LINE_CHARS = 300
+# Era 300 ate nov/2026, e cortava justamente o que importa: a frase da Amazon
+# sobre o Mais Vantagens era guardada ate "a tarifa padrao ... pass" - a taxa
+# vinha depois do corte, e uma mudanca nela passaria sem alerta.
+MAX_LINE_CHARS = 2000
+
+# Formato das linhas guardadas no estado. Mudou de 1 para 2 quando as linhas
+# deixaram de ser cortadas em 300 caracteres: o hash de toda frase longa muda
+# sem a pagina mudar. Por MIGRATION_HOURS a fonte adota as leituras sem alertar
+# - tempo para reaprender tambem as versoes de um site que alterna (Amazon).
+LINE_FORMAT = 2
+MIGRATION_HOURS = 12
 
 # Ha quanto tempo uma fonte precisa estar falhando para avisar que o proprio
 # monitor quebrou. E tempo, e nao numero de falhas, porque o numero depende da
@@ -70,11 +80,13 @@ MAX_LINE_CHARS = 300
 # qualquer grade razoavel e ainda avisa no mesmo dia.
 FAILURE_ALERT_HOURS = 12
 
-# Campos da leitura que vao para o arquivo de estado. Fica de fora tudo que
-# muda a cada rodada sem a pagina mudar (horario da leitura, titulo da aba,
+# Campos da leitura que vao para o arquivo de estado. `sections` e `tables` nao
+# entram no hash (a deteccao continua so pelas linhas); existem para guardar a
+# pagina numa forma que permita EXPLICAR a mudanca depois. Fica de fora tudo
+# que muda a cada rodada sem a pagina mudar (horario da leitura, titulo da aba,
 # de onde veio o upgrade de URL): com varias rodadas por dia, cada um desses
 # viraria um commit inutil no repositorio.
-PERSIST_KEYS = ("url", "numbers", "text_hash", "lines", "changed_at")
+PERSIST_KEYS = ("url", "numbers", "text_hash", "lines", "changed_at", "sections", "tables")
 
 # Versoes da pagina que ja foram a confirmada e por quanto tempo sao lembradas.
 # Existe porque a Amazon serviu /precos em DUAS versoes ao mesmo tempo (teste
@@ -124,7 +136,49 @@ CLEAN_JS = """
     w: img.naturalWidth || img.width || 0,
     h: img.naturalHeight || img.height || 0,
   })).filter(i => i.src && !i.src.startsWith('data:') && i.w >= 200);
-  return {text: root.innerText || '', images: images};
+
+  // Tabelas como tabelas (titulo, cabecalho, linhas) e os titulos de secao, para
+  // o alerta conseguir dizer "linha X, coluna Y: antes -> agora" em vez de uma
+  // sopa de numeros. Isolado num try: um site esquisito aqui nao pode derrubar
+  // a leitura do texto, que e o que detecta a mudanca.
+  let tables = [], headings = [];
+  try {
+    const clean = el => (el.innerText || '').replace(/\s+/g, ' ').trim();
+    const hs = Array.from(root.querySelectorAll('h1,h2,h3,h4,h5,h6,[role="heading"]'));
+    headings = hs.map(clean).filter(t => t);
+    const sel = 'table,[role="table"],[role="grid"]';
+    const tbls = Array.from(root.querySelectorAll(sel))
+      .filter(t => !(t.parentElement && t.parentElement.closest(sel)));
+    for (const t of tbls) {
+      const isHtml = t.tagName === 'TABLE';
+      const rowEls = isHtml ? Array.from(t.rows)
+                            : Array.from(t.querySelectorAll('[role="row"]'));
+      const rows = [];
+      for (const r of rowEls) {
+        const cellEls = isHtml ? Array.from(r.cells) : Array.from(r.querySelectorAll(
+          '[role="cell"],[role="gridcell"],[role="columnheader"],[role="rowheader"]'));
+        const cells = [];
+        let head = cellEls.length > 0;
+        for (const c of cellEls) {
+          const isHead = c.tagName === 'TH' || /header/.test(c.getAttribute('role') || '');
+          head = head && isHead;
+          // colspan repetido mantem as colunas alinhadas com o cabecalho
+          const span = Math.min(isHtml ? (c.colSpan || 1) : 1, 20);
+          for (let i = 0; i < span; i++) cells.push(clean(c).slice(0, 120));
+        }
+        if (cells.some(x => x)) rows.push({h: head, c: cells.slice(0, 20)});
+      }
+      if (rows.length < 2 || Math.max(...rows.map(r => r.c.length)) < 2) continue;
+      let title = (isHtml && t.caption) ? clean(t.caption) : '';
+      if (!title) {
+        for (const h of hs) {
+          if (h.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING) title = clean(h);
+        }
+      }
+      tables.push({title: title.slice(0, 150), rows: rows.slice(0, 200)});
+    }
+  } catch (e) { tables = []; }
+  return {text: root.innerText || '', images: images, tables: tables, headings: headings};
 }
 """
 
@@ -240,25 +294,39 @@ def build_filters(defaults: dict, src: dict) -> Tuple[List[str], List[re.Pattern
 
 
 def relevant_lines(text: str, keywords: List[str], ignores: List[re.Pattern]) -> List[str]:
-    """Fica so com o que fala de dinheiro.
+    return relevant_lines_sections(text, keywords, ignores, [])[0]
+
+
+def relevant_lines_sections(text: str, keywords: List[str], ignores: List[re.Pattern],
+                            headings: List[str]) -> Tuple[List[str], List[str]]:
+    """Fica so com o que fala de dinheiro - e anota a secao de cada linha.
+
+    A secao e o ultimo titulo (h1-h6) visto antes da linha. Nao entra no hash:
+    serve so para o alerta dizer ONDE na pagina a frase mudou.
 
     Sem esse filtro o monitor compara a pagina inteira e alerta a cada troca de
     banner promocional. Uma linha entra se tem '%', 'R$' ou uma das palavras de
     `keywords` - e nao casa com nenhum `ignore_patterns`.
     """
+    heads = {strip_accents(normalize_line(h)).lower() for h in headings}
     out: List[str] = []
+    sections: List[str] = []
+    current = ""
     for raw in text.splitlines():
         line = normalize_line(raw)
         if not line or len(line) < 3:
             continue
+        flat = strip_accents(line).lower()
+        if flat in heads:
+            current = line[:120]
         if any(p.search(line) for p in ignores):
             continue
-        flat = strip_accents(line).lower()
         if "%" in line or "r$" in flat or any(k in flat for k in keywords):
             out.append(line[:MAX_LINE_CHARS])
+            sections.append(current)
         if len(out) >= MAX_LINES_STORED:
             break
-    return out
+    return out, sections
 
 
 def hash_lines(lines: List[str]) -> str:
@@ -306,6 +374,8 @@ def fetch(page, url: str, settle_ms: int) -> dict:
         extracted = page.evaluate(CLEAN_JS) or {}
         text = extracted.get("text") or ""
         images = extracted.get("images") or []
+        tables = extracted.get("tables") or []
+        headings = extracted.get("headings") or []
         title = page.title()
         final_url = page.url
     except PWError as exc:
@@ -317,6 +387,8 @@ def fetch(page, url: str, settle_ms: int) -> dict:
         "title": title,
         "text": text,
         "images": images,
+        "tables": tables,
+        "headings": headings,
         "links": links,
     }
 
@@ -528,6 +600,299 @@ def save_state(state: dict, path: Path = STATE_FILE) -> None:
 # ============================================================
 
 
+# ============================================================
+# Explicacao da mudanca
+# ============================================================
+#
+# A deteccao (hash das linhas) diz SE a pagina mudou. Esta parte diz O QUE
+# mudou, numa forma que alguem entenda sem abrir o site:
+#   - tabela: celula a celula, "linha . coluna: antes -> agora (+x%)";
+#   - frase: o par antes/agora com o trecho que mudou destacado e a secao da
+#     pagina onde ela esta;
+#   - o que sumiu ou apareceu sem par.
+
+def number_list(text: str) -> List[Tuple[str, float]]:
+    """Todos os numeros (% e R$) da frase, NA ORDEM e com repeticao."""
+    found: List[Tuple[int, str, float]] = []
+    for m in PCT_RE.finditer(text):
+        v = parse_pct(m.group(1))
+        if v is not None and 0 < v <= 100:
+            found.append((m.start(), "pct", v))
+    for m in BRL_RE.finditer(text):
+        v = parse_brl(m.group(1))
+        if v is not None and m.group(2):
+            v *= BRL_MULT[m.group(2).lower()]
+        if v is not None:
+            found.append((m.start(), "brl", v))
+    return [(k, v) for _, k, v in sorted(found)]
+
+
+def fmt_num(kind: str, v: float) -> str:
+    return fmt_pct(v) if kind == "pct" else fmt_brl(v)
+
+
+def fmt_delta(old: float, new: float) -> str:
+    if not old:
+        return ""
+    d = (new - old) / old * 100
+    return f"{d:+.1f}%".replace(".", ",")
+
+
+def numbers_changed(old_lines: List[str], new_lines: List[str]) -> bool:
+    """Contagem com repeticao: '1,5%' que vira '2,5%' conta mesmo se outro
+    '1,5%' continuar na pagina - com conjunto, essa troca passava como texto."""
+    def count(lines):
+        c: Dict[Tuple[str, float], int] = {}
+        for l in lines:
+            for k in number_list(l):
+                c[k] = c.get(k, 0) + 1
+        return c
+    return count(old_lines) != count(new_lines)
+
+
+def _flat(s: str) -> str:
+    return strip_accents(s).lower().strip()
+
+
+def normalize_tables(raw: List[dict]) -> List[dict]:
+    """{title, rows:[{h, c}]} do navegador -> {titulo, colunas, linhas}.
+
+    Cabecalho = linhas iniciais so de <th>; com mais de uma (grupo "Preco do
+    produto" em cima, faixas embaixo), o nome da coluna junta as duas.
+    """
+    out = []
+    for t in raw or []:
+        rows = [r for r in t.get("rows", []) if r.get("c")]
+        if len(rows) < 2:
+            continue
+        n_head = 0
+        while n_head < len(rows) - 1 and rows[n_head].get("h"):
+            n_head += 1
+        if n_head == 0:
+            n_head = 1
+        width = max(len(r["c"]) for r in rows)
+        partes = []
+        for j in range(width):
+            parts = []
+            for r in rows[:n_head]:
+                cell = r["c"][j] if j < len(r["c"]) else ""
+                if cell and cell not in parts:
+                    parts.append(cell)
+            partes.append(parts)
+        # Grupo que cobre TODAS as colunas ("Preco do produto" em cima de tudo)
+        # nao distingue coluna nenhuma - so encompridaria cada linha do alerta.
+        primeiros = {p[0] for p in partes if len(p) > 1}
+        if len(primeiros) == 1 and all(len(p) > 1 or not p for p in partes[1:]):
+            grupo = primeiros.pop()
+            partes = [[x for x in p if x != grupo] or p for p in partes]
+        cols = [" · ".join(p) for p in partes]
+        linhas = [r["c"] + [""] * (width - len(r["c"])) for r in rows[n_head:]]
+        out.append({"titulo": t.get("title", ""), "colunas": cols, "linhas": linhas})
+    return out
+
+
+def table_rows_text(tables: List[dict]) -> set:
+    """Como cada linha de tabela aparece no innerText (para nao explicar duas
+    vezes: uma como celula e outra como frase)."""
+    out = set()
+    for t in tables or []:
+        for row in [t["colunas"]] + t["linhas"]:
+            out.add(_flat(normalize_line(" ".join(c for c in row if c))))
+    return out
+
+
+def _match_tables(old: List[dict], new: List[dict]) -> List[Tuple[Optional[dict], Optional[dict]]]:
+    pairs, used = [], set()
+    for t in new:
+        hit = None
+        for i, o in enumerate(old):
+            if i not in used and o["titulo"] and _flat(o["titulo"]) == _flat(t["titulo"]):
+                hit = i
+                break
+        if hit is None:
+            for i, o in enumerate(old):
+                if i not in used and [_flat(c) for c in o["colunas"]] == [_flat(c) for c in t["colunas"]]:
+                    hit = i
+                    break
+        if hit is None:
+            for i, o in enumerate(old):
+                if i not in used:
+                    hit = i
+                    break
+        if hit is not None:
+            used.add(hit)
+            pairs.append((old[hit], t))
+        else:
+            pairs.append((None, t))
+    pairs += [(o, None) for i, o in enumerate(old) if i not in used]
+    return pairs
+
+
+def diff_table(old: Optional[dict], new: Optional[dict]) -> Optional[dict]:
+    if old is None:
+        return {"titulo": new["titulo"], "nova": True, "n_linhas": len(new["linhas"])}
+    if new is None:
+        return {"titulo": old["titulo"], "removida": True}
+
+    def keyed(t):
+        out, seen = {}, {}
+        for row in t["linhas"]:
+            k = _flat(row[0])
+            seen[k] = seen.get(k, 0) + 1
+            out[k if seen[k] == 1 else f"{k}#{seen[k]}"] = row
+        return out
+
+    ko, kn = keyed(old), keyed(new)
+    cols = new["colunas"]
+    celulas, deltas = [], []
+    total = 0
+    for k, row in kn.items():
+        if k not in ko:
+            continue
+        orow = ko[k]
+        for j in range(1, len(row)):
+            total += 1
+            a = orow[j] if j < len(orow) else ""
+            b = row[j]
+            if _flat(a) == _flat(b):
+                continue
+            col = cols[j] if j < len(cols) else f"coluna {j + 1}"
+            na, nb = number_list(a), number_list(b)
+            delta = ""
+            if len(na) == 1 and len(nb) == 1 and na[0][0] == nb[0][0]:
+                delta = fmt_delta(na[0][1], nb[0][1])
+                if na[0][1]:
+                    deltas.append((nb[0][1] - na[0][1]) / na[0][1] * 100)
+            celulas.append({"linha": row[0], "coluna": col, "antes": a, "agora": b, "delta": delta})
+    novas = [r[0] for k, r in kn.items() if k not in ko]
+    removidas = [r[0] for k, r in ko.items() if k not in kn]
+    colunas_mudaram = [_flat(c) for c in old["colunas"]] != [_flat(c) for c in cols]
+    if not (celulas or novas or removidas or colunas_mudaram):
+        return None
+    return {
+        "titulo": new["titulo"] or old["titulo"],
+        "celulas": celulas, "total": total, "deltas": deltas,
+        "linhas_novas": novas, "linhas_removidas": removidas,
+        "colunas_antes": old["colunas"] if colunas_mudaram else None,
+        "colunas_agora": cols if colunas_mudaram else None,
+    }
+
+
+def _sim(a: str, b: str) -> float:
+    return difflib.SequenceMatcher(None, _flat(a), _flat(b), autojunk=False).ratio()
+
+
+def pair_lines(old: List[str], new: List[str]) -> Tuple[List[Tuple[str, str]], List[str], List[str]]:
+    """Casa cada frase que sumiu com a frase nova mais parecida (>= 50%).
+
+    Primeiro bloco a bloco (onde a pagina mudou); depois, o que sobrou, no geral
+    - pega frase que mudou E trocou de lugar. Frase identica que so mudou de
+    lugar nao e mudanca.
+    """
+    sm = difflib.SequenceMatcher(None, old, new, autojunk=False)
+    pairs: List[Tuple[str, str]] = []
+    removed: List[str] = []
+    added: List[str] = []
+
+    def greedy(olds, news):
+        used, prs, rem = set(), [], []
+        for o in olds:
+            best, bj = 0.0, None
+            for j, n in enumerate(news):
+                if j not in used:
+                    r = _sim(o, n)
+                    if r > best:
+                        best, bj = r, j
+            if bj is not None and best >= 0.5:
+                used.add(bj)
+                prs.append((o, news[bj]))
+            else:
+                rem.append(o)
+        return prs, rem, [n for j, n in enumerate(news) if j not in used]
+
+    for op, i1, i2, j1, j2 in sm.get_opcodes():
+        if op == "equal":
+            continue
+        prs, rem, add = greedy(old[i1:i2], new[j1:j2])
+        pairs += prs
+        removed += rem
+        added += add
+    # frase identica so trocada de lugar
+    for line in list(removed):
+        if line in added:
+            removed.remove(line)
+            added.remove(line)
+    prs, removed, added = greedy(removed, added)
+    pairs += prs
+    pairs = [(a, b) for a, b in pairs if _flat(a) != _flat(b)]
+    return pairs, removed, added
+
+
+def inline_diff(a: str, b: str, context: int = 10) -> Tuple[str, str]:
+    """Antes/agora em HTML do Telegram: so o trecho que mudou, com folga de
+    `context` palavras de cada lado; o que saiu riscado, o que entrou em negrito."""
+    ta, tb = a.split(), b.split()
+    sm = difflib.SequenceMatcher(None, ta, tb, autojunk=False)
+    ops = sm.get_opcodes()
+    changed = [o for o in ops if o[0] != "equal"]
+    if not changed:
+        return esc(a), esc(b)
+    a_lo, a_hi = max(0, changed[0][1] - context), min(len(ta), changed[-1][2] + context)
+    b_lo, b_hi = max(0, changed[0][3] - context), min(len(tb), changed[-1][4] + context)
+
+    def side(tokens, lo, hi, idx, tag):
+        out = []
+        for op, i1, i2, j1, j2 in ops:
+            s0, s1 = (i1, i2) if idx == 0 else (j1, j2)
+            s0, s1 = max(s0, lo), min(s1, hi)
+            if s0 >= s1:
+                continue
+            chunk = esc(" ".join(tokens[s0:s1]))
+            out.append(chunk if op == "equal" else f"<{tag}>{chunk}</{tag}>")
+        text = " ".join(out)
+        return ("… " if lo > 0 else "") + text + (" …" if hi < len(tokens) else "")
+
+    return side(ta, a_lo, a_hi, 0, "s"), side(tb, b_lo, b_hi, 1, "b")
+
+
+def explain(prev: dict, snap: dict) -> dict:
+    """O que mudou, em partes que a mensagem sabe mostrar."""
+    tabelas = [d for d in (diff_table(o, n) for o, n in
+               _match_tables(prev.get("tables") or [], snap.get("tables") or [])) if d]
+    em_tabela = table_rows_text(prev.get("tables")) | table_rows_text(snap.get("tables"))
+
+    def prosa(lines, secs):
+        secs = secs if secs and len(secs) == len(lines) else [""] * len(lines)
+        return [(l, s) for l, s in zip(lines, secs)
+                if _flat(l) not in em_tabela and not l.startswith(IMAGE_PREFIX)]
+
+    old_p = prosa(prev.get("lines", []), prev.get("sections"))
+    new_p = prosa(snap.get("lines", []), snap.get("sections"))
+    sec_of = {l: s for l, s in old_p}
+    sec_of.update({l: s for l, s in new_p})
+    pairs, removed, added = pair_lines([l for l, _ in old_p], [l for l, _ in new_p])
+
+    imgs_old = [l for l in prev.get("lines", []) if l.startswith(IMAGE_PREFIX)]
+    imgs_new = [l for l in snap.get("lines", []) if l.startswith(IMAGE_PREFIX)]
+
+    resumo = []
+    for a, b in pairs:
+        na, nb = number_list(a), number_list(b)
+        if len(na) == len(nb):
+            for (ka, va), (kb, vb) in zip(na, nb):
+                if ka == kb and va != vb:
+                    resumo.append(f"{fmt_num(ka, va)} → {fmt_num(kb, vb)}")
+    return {
+        "tabelas": tabelas,
+        "pares": [{"antes": a, "agora": b, "secao": sec_of.get(b) or sec_of.get(a, "")}
+                  for a, b in pairs],
+        "removidas": [{"texto": l, "secao": sec_of.get(l, "")} for l in removed],
+        "novas": [{"texto": l, "secao": sec_of.get(l, "")} for l in added],
+        "imagens": imgs_old != imgs_new,
+        "resumo": list(dict.fromkeys(resumo)),
+    }
+
+
 def line_diff(old: List[str], new: List[str], limit: int = 12) -> List[str]:
     diff = [
         l
@@ -564,7 +929,11 @@ def compare(src: dict, prev: dict, snap: dict) -> List[dict]:
     saiu = sorted(old_nums - new_nums)
     entrou = sorted(new_nums - old_nums)
 
-    if saiu or entrou:
+    if snap["text_hash"] == prev.get("text_hash") and not (saiu or entrou):
+        return events
+
+    explicacao = explain(prev, snap)
+    if saiu or entrou or numbers_changed(prev.get("lines", []), snap["lines"]):
         events.append(
             {
                 "kind": "numeros",
@@ -574,9 +943,10 @@ def compare(src: dict, prev: dict, snap: dict) -> List[dict]:
                 "url": snap["url"],
                 "saiu": [(display_key(k), prev["numbers"][k]) for k in saiu],
                 "entrou": [(display_key(k), snap["numbers"][k]) for k in entrou],
+                "explicacao": explicacao,
             }
         )
-    elif snap["text_hash"] != prev.get("text_hash"):
+    else:
         events.append(
             {
                 "kind": "texto",
@@ -585,6 +955,7 @@ def compare(src: dict, prev: dict, snap: dict) -> List[dict]:
                 "src": src,
                 "url": snap["url"],
                 "diff": line_diff(prev.get("lines", []), snap["lines"]),
+                "explicacao": explicacao,
             }
         )
 
@@ -604,8 +975,95 @@ def mp_emoji(src: dict) -> str:
     return EMOJI.get(src.get("marketplace", ""), "•")
 
 
+MAX_CELULAS_MSG = 10
+MAX_FRASES_MSG = 6
+
+
+def _secao(secao: str, texto: str) -> str:
+    return f"<i>{esc(secao)}</i>\n" if secao and _flat(secao) != _flat(texto) else ""
+
+
+def _corta(texto: str, n: int = 600) -> str:
+    return texto if len(texto) <= n else texto[: n - 1].rstrip() + "…"
+
+
+def render_explicacao(ex: dict) -> List[str]:
+    """As partes de explain() em texto de Telegram, da mais importante para a
+    menos: tabelas, frases alteradas, frases novas/removidas, imagens."""
+    out: List[str] = []
+    if ex.get("resumo"):
+        out.append("<b>Resumo:</b> " + esc(" · ".join(ex["resumo"][:4])))
+
+    for t in ex.get("tabelas", []):
+        nome = esc(t["titulo"] or "Tabela")
+        if t.get("nova"):
+            out.append(f"📊 <b>{nome}</b>\nTabela nova na página ({t['n_linhas']} linhas)")
+            continue
+        if t.get("removida"):
+            out.append(f"📊 <b>{nome}</b>\nTabela removida da página")
+            continue
+        bloco = [f"📊 <b>{nome}</b>"]
+        cel, deltas = t["celulas"], t["deltas"]
+        if cel:
+            linha = f"{len(cel)} de {t['total']} valores mudaram"
+            if len(deltas) >= 3:
+                media = sum(deltas) / len(deltas)
+                if max(deltas) - min(deltas) < 0.05:
+                    linha += f" · todos <b>{media:+.1f}%</b>".replace(".", ",")
+                else:
+                    linha += (f" · variação média <b>{media:+.1f}%</b>"
+                              f" (de {min(deltas):+.1f}% a {max(deltas):+.1f}%)").replace(".", ",")
+            bloco.append(linha)
+            for c in cel[:MAX_CELULAS_MSG]:
+                delta = f" ({c['delta']})" if c["delta"] else ""
+                bloco.append(f"• {esc(c['linha'])} · {esc(c['coluna'])}: "
+                             f"{esc(c['antes'] or '—')} → <b>{esc(c['agora'] or '—')}</b>{esc(delta)}")
+            if len(cel) > MAX_CELULAS_MSG:
+                bloco.append(f"<i>… e mais {len(cel) - MAX_CELULAS_MSG}</i>")
+        for r in t["linhas_novas"][:5]:
+            bloco.append(f"➕ linha nova: {esc(r)}")
+        for r in t["linhas_removidas"][:5]:
+            bloco.append(f"➖ linha removida: {esc(r)}")
+        if t.get("colunas_agora"):
+            bloco.append("Colunas mudaram:\n  antes: " + esc(" | ".join(t["colunas_antes"]))
+                         + "\n  agora: " + esc(" | ".join(t["colunas_agora"])))
+        out.append("\n".join(bloco))
+
+    # O que mexe em valor vem primeiro; "Saiba mais sobre os planos" por ultimo.
+    # Removido vem antes de novo: le-se "saiu isto, entrou aquilo".
+    itens = []
+    for p in ex.get("pares", []):
+        mudou_valor = number_list(p["antes"]) != number_list(p["agora"])
+        antes, agora = inline_diff(p["antes"], p["agora"])
+        itens.append((0 if mudou_valor else 2,
+                      f"✏️ {_secao(p['secao'], p['agora'])}<b>Antes:</b> {antes}\n<b>Agora:</b> {agora}"))
+    sem_par = [(x, "➖ <b>Removido:</b>") for x in ex.get("removidas", [])] + \
+              [(x, "➕ <b>Novo:</b>") for x in ex.get("novas", [])]
+    for item, rot in sem_par:
+        tem_valor = bool(number_list(item["texto"]))
+        itens.append((1 if tem_valor else 3,
+                      f"{_secao(item['secao'], item['texto'])}{rot} {esc(_corta(item['texto']))}"))
+    itens.sort(key=lambda t: t[0])  # sort estavel: dentro da prioridade, ordem da pagina
+    out += [t for _, t in itens[:MAX_FRASES_MSG]]
+    if len(itens) > MAX_FRASES_MSG:
+        out.append(f"<i>… e mais {len(itens) - MAX_FRASES_MSG} trecho(s) alterado(s) na página</i>")
+    if ex.get("imagens"):
+        out.append("🖼 Uma imagem do conteúdo foi trocada — pode ser a tabela de tarifas, confira na página")
+    return out
+
+
 def render_event(ev: dict) -> str:
     head = f"{mp_emoji(ev['src'])} <b>{esc(ev['fonte'])}</b>"
+    corpo = render_explicacao(ev["explicacao"]) if ev.get("explicacao") else []
+
+    if ev["kind"] in ("numeros", "texto") and corpo:
+        titulo = ("🚨 " + head + "\n<i>Valor de tarifa mudou</i>") if ev["kind"] == "numeros" \
+            else ("📝 " + head + "\n<i>Texto mudou, nenhum valor mudou</i>")
+        so_imagem = ev["explicacao"].get("imagens") and len(corpo) == 1
+        if so_imagem:
+            titulo = "📝 " + head + "\n<i>Imagem da pagina trocada — pode ser a tabela de tarifas, confira</i>"
+            corpo = []
+        return "\n\n".join([titulo] + corpo + [f'🔗 <a href="{esc(ev["url"])}">ver pagina</a>'])
 
     if ev["kind"] == "numeros":
         parts = [f"🚨 {head}", "<i>Valor de tarifa mudou</i>"]
@@ -774,16 +1232,21 @@ def image_lines(images: List[dict]) -> List[str]:
 
 def snapshot(src: dict, res: dict, defaults: dict) -> dict:
     keywords, ignores = build_filters(defaults, src)
-    lines = relevant_lines(res["text"], keywords, ignores)
+    lines, sections = relevant_lines_sections(
+        res["text"], keywords, ignores, res.get("headings", []))
     numbers = extract_numbers(lines)
     if src.get("track_images"):
-        lines += image_lines(res.get("images", []))
+        imgs = image_lines(res.get("images", []))
+        lines += imgs
+        sections += [""] * len(imgs)
     return {
         "url": res["url"],
         "titulo": res["title"],
         "numbers": numbers,
         "text_hash": hash_lines(lines),
         "lines": lines,
+        "sections": sections,
+        "tables": normalize_tables(res.get("tables", [])),
         "upgraded_from": res.get("upgraded_from"),
     }
 
@@ -877,6 +1340,30 @@ def is_confirmed(prev: dict, snap: dict) -> bool:
     """
     pending = prev.get("pending") or {}
     return pending.get("key") == change_key(snap)
+
+
+def migration_deadline(prev: dict, now: datetime) -> Optional[str]:
+    """Ate quando a fonte ainda esta migrando de formato (None = nao esta)."""
+    if not prev.get("text_hash"):
+        return None
+    ate = prev.get("migrar_ate")
+    if not ate and prev.get("formato", 1) < LINE_FORMAT:
+        ate = (now + timedelta(hours=MIGRATION_HOURS)).isoformat(timespec="seconds")
+    if ate and now < datetime.fromisoformat(ate):
+        return ate
+    return None
+
+
+def migrate_entry(prev: dict, snap: dict, now: datetime, ate: str) -> dict:
+    """Adota a leitura sem alertar; a confirmada anterior vira versao conhecida."""
+    if change_key(snap) == [prev["text_hash"], canon_url(prev.get("url", ""))]:
+        entry = persisted(snap, prev, False, now)
+    elif is_known_variant(prev, snap, now):
+        entry = with_variant_seen(prev, snap, now)
+    else:
+        entry = persisted(snap, prev, True, now)
+    entry["migrar_ate"] = ate
+    return entry
 
 
 def register_failure(prev: dict, erro: str, now: datetime) -> Tuple[dict, bool, float]:
@@ -999,8 +1486,13 @@ def main() -> int:
                 # Anotacao aparece na pagina da execucao e e lida pela API do
                 # GitHub - sem precisar baixar log nem artifact.
                 if os.environ.get("GITHUB_ACTIONS"):
+                    tabs = "; ".join(
+                        f"'{t['titulo'] or '(sem titulo)'}' {len(t['linhas'])}x{len(t['colunas'])} "
+                        f"[{' | '.join(t['colunas'][:4])}]" for t in snap["tables"]) or "nenhuma"
+                    secs = sorted({x for x in snap["sections"] if x})
                     msg = (f"URL: {snap['url']}\nTITULO: {snap['titulo']}\n"
-                           f"{len(snap['lines'])} linhas, valores: {valores}\n"
+                           f"{len(snap['lines'])} linhas, {len(secs)} secoes, tabelas: {tabs}\n"
+                           f"valores: {valores}\n"
                            f"{len(imgs)} imagens:\n" + "\n".join(
                                f"{i['w']}x{i['h']} alt={i['alt']!r} {i['src']}" for i in imgs[:15]))
                     msg = msg[:3500].replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
@@ -1008,10 +1500,13 @@ def main() -> int:
                 continue
 
             is_baseline = args.seed or not prev.get("text_hash")
+            migrando_ate = None if is_baseline else migration_deadline(prev, now)
             novos: List[dict] = []
             pendente = False
             variante = False
-            if is_baseline:
+            if migrando_ate:
+                print(f"  estado em formato novo: leitura adotada sem alerta ate {migrando_ate}")
+            elif is_baseline:
                 print("  baseline registrada (sem comparacao)")
                 baselines.append({
                     "kind": "baseline",
@@ -1045,13 +1540,16 @@ def main() -> int:
                     })
 
             if not args.dry_run:
-                if not is_baseline and variante:
+                if migrando_ate:
+                    state["sources"][sid] = migrate_entry(prev, snap, now, migrando_ate)
+                elif not is_baseline and variante:
                     state["sources"][sid] = with_variant_seen(prev, snap, now)
                 elif not is_baseline and pendente:
                     state["sources"][sid] = with_pending(prev, snap, now)
                 else:
                     mudou = is_baseline or any(e["kind"] in TARIFA_KINDS for e in novos)
                     state["sources"][sid] = persisted(snap, prev, mudou, now)
+                state["sources"][sid]["formato"] = LINE_FORMAT
 
         context.close()
         browser.close()

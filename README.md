@@ -120,6 +120,44 @@ Uma fonte fora do ar não derruba as outras: o job só falha se *todas* falharem
 
 ---
 
+## Como é o alerta
+
+O estado guarda a página em forma estruturada — além das linhas de texto, as
+**tabelas** (título, colunas, linhas) e a **seção** (o título da página) onde
+cada frase está. Com isso o alerta diz o que mudou, e não só que números
+apareceram e sumiram:
+
+**Tabela** — célula a célula, com a variação:
+
+> 🚨 🟡 **Mercado Livre - Custos de vender**
+> 📊 **Custos dos Envios no Mercado Livre**
+> 25 de 240 valores mudaram · todos **+5,0%**
+> • Até 0,3 kg · R$ 79 a R$ 99,99: R$ 12,95 → **R$ 13,60** (+5,0%)
+> • Até 0,3 kg · R$ 100 a R$ 119,99: R$ 14,95 → **R$ 15,70** (+5,0%)
+> … e mais 23
+
+**Frase alterada** — antes e agora, com o trecho que mudou destacado e a seção:
+
+> ✏️ *Descontos por reputação*
+> **Antes:** Até ~~50%~~ de desconto nos seus custos por ter reputação verde.
+> **Agora:** Até **40%** de desconto nos seus custos por ter reputação verde.
+
+**Frase reescrita** (sem par parecido) — o que saiu e o que entrou, primeiro o
+que tem valor de tarifa:
+
+> ➖ **Removido:** …programa de parcelamento sem juros… por uma tarifa de 1,5%…
+> ➕ **Novo:** …Amazon Mais Vantagens… por uma tarifa de 2,5% (tributos inclusos)…
+
+Quando uma frase troca um valor que continua aparecendo em outro lugar da
+página (um 1,5% que vira 2,5% com outro 1,5% intacto), o alerta ainda é de
+tarifa: a comparação conta cada ocorrência, não só os valores distintos.
+
+As frases são guardadas inteiras (até 2.000 caracteres). Até nov/2026 eram
+cortadas em 300, e a taxa da frase da Amazon sobre o Mais Vantagens ficava
+depois do corte — uma mudança nela passaria sem alerta.
+
+---
+
 ## Colocando no ar
 
 ### 1. Criar o bot do Telegram
