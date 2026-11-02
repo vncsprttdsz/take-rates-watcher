@@ -569,6 +569,24 @@ def test_fonte_ja_no_formato_novo_nao_migra():
     assert ct.migration_deadline(st, datetime(2026, 11, 2, tzinfo=timezone.utc)) is None
 
 
+def test_grade_de_categorias_leva_o_nome_da_categoria():
+    """Amazon: comissao por categoria e grade de cartoes, nao <table>. Sem o
+    rotulo, o alerta diria '12% -> 13%' sem dizer de qual categoria."""
+    grade = "Comissoes de venda\nEletronicos\n{}\nComissao minima R$1,00\nLivros\n15%\nBrinquedos\n12%"
+    a, b = snap(grade.format("12%")), snap(grade.format("13%"))
+    assert "Eletronicos: 12%" in a["lines"] and "Brinquedos: 12%" in a["lines"], a["lines"]
+    ev = ct.compare(SRC, a, b)[0]
+    assert ev["kind"] == "numeros"
+    par = ev["explicacao"]["pares"]
+    assert [(p["antes"], p["agora"]) for p in par] == [("Eletronicos: 12%", "Eletronicos: 13%")], par
+    assert ev["explicacao"]["resumo"] == ["12% → 13%"]
+
+
+def test_linha_de_tabela_nao_ganha_rotulo():
+    linhas = ct.relevant_lines("Custos de envio\nAte 0,3 kg R$ 5,65 R$ 6,85 R$ 8,15", ["custo"], [])
+    assert linhas[-1] == "Ate 0,3 kg R$ 5,65 R$ 6,85 R$ 8,15"
+
+
 def test_url_do_ano():
     assert ct.url_year("https://s/artigo-em-2026") == 2026
     assert ct.url_year("https://s/artigo") is None

@@ -312,21 +312,47 @@ def relevant_lines_sections(text: str, keywords: List[str], ignores: List[re.Pat
     out: List[str] = []
     sections: List[str] = []
     current = ""
+    label = ""
     for raw in text.splitlines():
         line = normalize_line(raw)
-        if not line or len(line) < 3:
+        if not line or len(line) < 2:
             continue
         flat = strip_accents(line).lower()
         if flat in heads:
             current = line[:120]
+        so_valor = is_value_only(line)
         if any(p.search(line) for p in ignores):
             continue
         if "%" in line or "r$" in flat or any(k in flat for k in keywords):
+            if so_valor and label:
+                line = f"{label}: {line}"
             out.append(line[:MAX_LINE_CHARS])
             sections.append(current)
+        # Rotulo e texto curto SEM numero ("Eletronicos"); uma linha com valor
+        # ("Comissao minima R$1,00") e informacao propria, nao nome de categoria.
+        if not so_valor and len(line) <= 100 and not number_list(line):
+            label = line
         if len(out) >= MAX_LINES_STORED:
             break
     return out, sections
+
+
+def is_value_only(line: str) -> bool:
+    """'12%', 'R$ 2,00', '15% ate R$ 100,00': valor sem dizer de que.
+
+    Na Amazon a comissao por categoria e uma grade de cartoes (nao <table>):
+    o texto vem como "Eletronicos" numa linha e "12%" na seguinte, e so o
+    "12%" passava pelo filtro - um alerta "12% -> 13%" nao diria de qual
+    categoria. Linha assim leva junto o rotulo que vem antes. Linha de tabela
+    (muitos numeros, "Ate 0,3 kg R$ 5,65 R$ 6,85 ...") nao entra: la o rotulo
+    e a propria primeira coluna.
+    """
+    nums = number_list(line)
+    if not 1 <= len(nums) <= 2:
+        return False
+    resto = re.sub(r"R\$\s*[\d.,]+(\s*(mil|milh\w+))?|\d+(?:[.,]\d+)?\s*%", " ", line, flags=re.I)
+    # <= 4 letras: "ate", "mes", "por". "Taxa fixa de R$ 2,00" ja diz o que e.
+    return len(re.sub(r"[^A-Za-zÀ-ÿ]", "", resto)) <= 4
 
 
 def hash_lines(lines: List[str]) -> str:
@@ -1490,8 +1516,11 @@ def main() -> int:
                         f"'{t['titulo'] or '(sem titulo)'}' {len(t['linhas'])}x{len(t['colunas'])} "
                         f"[{' | '.join(t['colunas'][:4])}]" for t in snap["tables"]) or "nenhuma"
                     secs = sorted({x for x in snap["sections"] if x})
+                    rotuladas = [l for l in snap["lines"] if ": " in l and len(l) <= 90
+                                 and is_value_only(l.rsplit(": ", 1)[-1])][:10]
                     msg = (f"URL: {snap['url']}\nTITULO: {snap['titulo']}\n"
                            f"{len(snap['lines'])} linhas, {len(secs)} secoes, tabelas: {tabs}\n"
+                           f"rotuladas: {' | '.join(rotuladas) or 'nenhuma'}\n"
                            f"valores: {valores}\n"
                            f"{len(imgs)} imagens:\n" + "\n".join(
                                f"{i['w']}x{i['h']} alt={i['alt']!r} {i['src']}" for i in imgs[:15]))
