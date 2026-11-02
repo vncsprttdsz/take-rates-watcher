@@ -230,7 +230,16 @@
         "pct:15.00": "A Amazon cobra uma comissão para cada item vendido, que varia entre 10% a 15%, dependendo da categoria do produto."
       },
       "text_hash": "2a544271af750aacc7da350002091698509dcc011d604280e574f2864edc56c2",
-      "url": "https://venda.amazon.com.br/precos"
+      "url": "https://venda.amazon.com.br/precos",
+      "variants": [
+        {
+          "key": [
+            "4a4439a9aad4969c2dd2ddd1ba3232d0c62fd1a8dcfb22da9e3ba5f90e29ffe6",
+            "https://venda.amazon.com.br/precos"
+          ],
+          "last_seen": "2026-11-02"
+        }
+      ]
     },
     "mercadolivre_custos": {
       "changed_at": "2026-09-22T20:37:51+00:00",

@@ -362,6 +362,77 @@ def test_imagem_trocada_vira_linha_e_muda_o_hash():
            ct.snapshot(SRC, res(imgs_b), DEFAULTS)["text_hash"]
 
 
+def _rodada_v(prev, texto, quando):
+    """Como main() trata uma leitura, com memoria de versoes: (alertas, estado)."""
+    s = snap(texto)
+    evs = ct.compare(SRC, prev, s)
+    if evs and ct.is_known_variant(prev, s, quando):
+        return [], ct.with_variant_seen(prev, s, quando)
+    if evs and not ct.is_confirmed(prev, s):
+        return [], ct.with_pending(prev, s, quando)
+    return evs, ct.persisted(s, prev, bool(evs), quando)
+
+
+PAG_A = PAGINA_2026
+PAG_B = PAGINA_2026.replace("Vendedores CPF pagam taxa de 6%",
+                            "Amazon Mais Vantagens: taxa de 2,5% para produtos ate R$ 10.000")
+
+
+def test_pagina_alternando_entre_duas_versoes_alerta_uma_vez():
+    """Incidente real (Amazon /precos, 28/10 a 02/11/2026): o site servia duas
+    versoes e cada troca confirmada virava alerta - 8 alertas, 7 falsos."""
+    from datetime import datetime, timedelta, timezone
+    t = datetime(2026, 10, 28, 12, tzinfo=timezone.utc)
+    st = ct.persisted(snap(PAG_A), {}, True, t)
+    seq = "BBAABABBAABBABAA"  # inclui repeticoes seguidas, como na vida real
+    alertas = []
+    for i, v in enumerate(seq):
+        evs, st = _rodada_v(st, PAG_A if v == "A" else PAG_B, t + timedelta(hours=2 * (i + 1)))
+        alertas += evs
+    assert len(alertas) == 1, [e["kind"] for e in alertas]
+    assert {x for x, _ in alertas[0]["entrou"]} == {"2,5%", "R$ 10.000,00"}, alertas[0]["entrou"]
+
+
+def test_alternancia_no_mesmo_dia_nao_mexe_no_estado():
+    from datetime import datetime, timedelta, timezone
+    t = datetime(2026, 10, 28, 1, tzinfo=timezone.utc)
+    st = ct.persisted(snap(PAG_A), {}, True, t)
+    _, st = _rodada_v(st, PAG_B, t + timedelta(hours=1))
+    _, st = _rodada_v(st, PAG_B, t + timedelta(hours=2))  # confirmada: B atual, A lembrada
+    _, st1 = _rodada_v(st, PAG_A, t + timedelta(hours=3))
+    _, st2 = _rodada_v(st1, PAG_A, t + timedelta(hours=5))
+    _, st3 = _rodada_v(st2, PAG_B, t + timedelta(hours=7))
+    assert st1 == st2 == st3, "alternar no mesmo dia gerou commit"
+
+
+def test_versao_nova_de_verdade_ainda_alerta_durante_alternancia():
+    from datetime import datetime, timedelta, timezone
+    t = datetime(2026, 10, 28, 1, tzinfo=timezone.utc)
+    st = ct.persisted(snap(PAG_A), {}, True, t)
+    for i, v in enumerate("BBAB"):
+        _, st = _rodada_v(st, PAG_A if v == "A" else PAG_B, t + timedelta(hours=i + 1))
+    pag_c = PAG_B.replace("2,5%", "3%")
+    evs, st = _rodada_v(st, pag_c, t + timedelta(hours=6))
+    assert evs == []
+    evs, st = _rodada_v(st, pag_c, t + timedelta(hours=7))
+    assert [x for x, _ in evs[0]["entrou"]] == ["3%"], evs
+
+
+def test_versao_esquecida_depois_de_14_dias_volta_a_alertar():
+    """Um rollback de verdade, semanas depois, nao pode passar calado."""
+    from datetime import datetime, timedelta, timezone
+    t = datetime(2026, 10, 1, tzinfo=timezone.utc)
+    st = ct.persisted(snap(PAG_A), {}, True, t)
+    _, st = _rodada_v(st, PAG_B, t + timedelta(hours=1))
+    evs, st = _rodada_v(st, PAG_B, t + timedelta(hours=2))
+    assert evs  # A -> B alertou; A agora e lembrada
+    depois = t + timedelta(days=ct.VARIANT_MEMORY_DAYS + 2)
+    evs, st = _rodada_v(st, PAG_A, depois)
+    assert evs == [] and "pending" in st, "versao velha deveria contar como novidade"
+    evs, st = _rodada_v(st, PAG_A, depois + timedelta(hours=2))
+    assert evs, "rollback depois da janela nao alertou"
+
+
 def test_url_do_ano():
     assert ct.url_year("https://s/artigo-em-2026") == 2026
     assert ct.url_year("https://s/artigo") is None

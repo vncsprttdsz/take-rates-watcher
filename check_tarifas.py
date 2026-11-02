@@ -26,7 +26,7 @@ import os
 import re
 import sys
 import unicodedata
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -75,6 +75,15 @@ FAILURE_ALERT_HOURS = 12
 # de onde veio o upgrade de URL): com varias rodadas por dia, cada um desses
 # viraria um commit inutil no repositorio.
 PERSIST_KEYS = ("url", "numbers", "text_hash", "lines", "changed_at")
+
+# Versoes da pagina que ja foram a confirmada e por quanto tempo sao lembradas.
+# Existe porque a Amazon serviu /precos em DUAS versoes ao mesmo tempo (teste
+# A/B ou troca em andamento, out/2026): cada rodada caia numa delas e cada
+# troca virava "tarifa mudou" - 7 alertas falsos em 5 dias. Uma versao lembrada
+# que volta nao alerta; so conteudo inedito alerta. 14 dias: depois disso, uma
+# versao que reaparece e tratada como novidade (um rollback de verdade).
+VARIANT_MEMORY_DAYS = 14
+MAX_VARIANTS = 5
 
 # Telegram corta em 4096 caracteres. 3500 deixa folga para o HTML.
 TELEGRAM_CHUNK = 3500
@@ -790,6 +799,49 @@ def persisted(snap: dict, prev: dict, changed: bool, now: datetime) -> dict:
         now.isoformat(timespec="seconds") if changed or not prev.get("changed_at")
         else prev["changed_at"]
     )
+    variants = live_variants(prev, now)
+    if changed and prev.get("text_hash"):
+        # A versao que deixa de ser a confirmada passa a ser "conhecida".
+        old = [prev["text_hash"], canon_url(prev.get("url", ""))]
+        variants = [v for v in variants if v["key"] not in (old, change_key(snap))]
+        variants = (variants + [{"key": old, "last_seen": now.date().isoformat()}])[-MAX_VARIANTS:]
+    if variants:
+        entry["variants"] = variants
+    return entry
+
+
+def live_variants(prev: dict, now: datetime) -> List[dict]:
+    """Versoes lembradas que ainda estao dentro de VARIANT_MEMORY_DAYS."""
+    out = []
+    for v in prev.get("variants") or []:
+        try:
+            seen = date.fromisoformat(v["last_seen"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if (now.date() - seen).days <= VARIANT_MEMORY_DAYS:
+            out.append({"key": list(v["key"]), "last_seen": v["last_seen"]})
+    return out[-MAX_VARIANTS:]
+
+
+def is_known_variant(prev: dict, snap: dict, now: datetime) -> bool:
+    key = change_key(snap)
+    return any(v["key"] == key for v in live_variants(prev, now))
+
+
+def with_variant_seen(prev: dict, snap: dict, now: datetime) -> dict:
+    """A leitura e uma versao ja conhecida: nada muda, so a data em que foi vista.
+
+    A data tem granularidade de dia, entao uma pagina que alterna o dia todo
+    gera no maximo um commit por dia - e nenhum alerta. Uma mudanca pendente e
+    descartada, como acontece quando a leitura volta a versao confirmada: a
+    confirmacao exige duas leituras SEGUIDAS da mesma novidade.
+    """
+    entry = {k: prev[k] for k in PERSIST_KEYS if k in prev}
+    key, today = change_key(snap), now.date().isoformat()
+    entry["variants"] = [
+        {"key": key, "last_seen": today} if v["key"] == key else v
+        for v in live_variants(prev, now)
+    ]
     return entry
 
 
@@ -804,6 +856,9 @@ def with_pending(prev: dict, snap: dict, now: datetime) -> dict:
     saber se a proxima rodada ve a MESMA coisa.
     """
     entry = {k: prev[k] for k in PERSIST_KEYS if k in prev}
+    variants = live_variants(prev, now)
+    if variants:
+        entry["variants"] = variants
     entry["pending"] = {
         "key": change_key(snap),
         "seen_at": now.isoformat(timespec="seconds"),
@@ -955,6 +1010,7 @@ def main() -> int:
             is_baseline = args.seed or not prev.get("text_hash")
             novos: List[dict] = []
             pendente = False
+            variante = False
             if is_baseline:
                 print("  baseline registrada (sem comparacao)")
                 baselines.append({
@@ -965,7 +1021,13 @@ def main() -> int:
                 })
             else:
                 novos = compare(src, prev, snap)
-                if novos and not is_confirmed(prev, snap):
+                variante = bool(novos) and is_known_variant(prev, snap, now)
+                if variante:
+                    print("  versao da pagina ja conhecida (o site alterna entre "
+                          "versoes); sem alerta")
+                    novos = []
+                    pendente = False
+                elif novos and not is_confirmed(prev, snap):
                     kinds = ", ".join(e["kind"] for e in novos)
                     print(f"  mudanca vista pela 1a vez ({kinds}); "
                           "so alerta se a proxima rodada confirmar")
@@ -983,7 +1045,9 @@ def main() -> int:
                     })
 
             if not args.dry_run:
-                if not is_baseline and pendente:
+                if not is_baseline and variante:
+                    state["sources"][sid] = with_variant_seen(prev, snap, now)
+                elif not is_baseline and pendente:
                     state["sources"][sid] = with_pending(prev, snap, now)
                 else:
                     mudou = is_baseline or any(e["kind"] in TARIFA_KINDS for e in novos)

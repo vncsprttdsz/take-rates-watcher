@@ -50,7 +50,15 @@ A cada rodada, para cada página:
    uma hora depois. Sem a confirmação, foram 4 alertas falsos. Mudança de
    tarifa de verdade persiste, e com 9 rodadas por dia confirmar custa de 1 a
    3 horas.
-5. **Manda um Telegram** com o antes/depois e o link, e commita o estado novo.
+5. **Lembra das versões que já viu.** Alguns sites servem duas versões da
+   mesma página ao mesmo tempo (teste A/B, troca em andamento): de 28/10 a
+   02/11/2026 a Amazon alternou `/precos` entre duas versões e cada troca
+   virava alerta — 8 alertas, 7 falsos. Agora, quando uma mudança é
+   confirmada, a versão anterior fica guardada por 14 dias
+   (`VARIANT_MEMORY_DAYS`); se ela voltar nesse período, não alerta. Só
+   conteúdo inédito alerta — e uma versão que reaparece depois de 14 dias
+   sumida conta como novidade (um rollback de verdade).
+6. **Manda um Telegram** com o antes/depois e o link, e commita o estado novo.
 
 Números equivalentes não viram alerta: `14%`, `14,0 %` e `14.00%` são lidos
 como o mesmo valor, e o mesmo vale para `R$ 1.000,00` vs `R$ 1000`. Banner
