@@ -481,7 +481,7 @@
       ]
     },
     "mercadolivre_custos": {
-      "changed_at": "2026-11-02T06:55:23+00:00",
+      "changed_at": "2026-11-13T20:56:12+00:00",
       "formato": 2,
       "lines": [
         "Custos dos Envios no Mercado Livre para MercadoLíder, reputação verde ou sem reputação",
@@ -492,9 +492,9 @@
         "Em anúncios a partir de R$ 79, você oferece frete grátis rápido.",
         "Oferecer frete grátis rápido em produtos abaixo de R$ 79 é opcional. Se você decidir oferecê-lo, pagará apenas essa tarifa de envio. Ver tarifas",
         "Descontos por reputação",
-        "Até 50% de desconto nos seus custos por ter reputação verde. Os valores da tabela já incluem essa isenção.",
+        "Até 50% de desconto nos seus custos por ter reputação verde. Os valores da tabela já incluem esse desconto.",
         "Custos dos Envios no Mercado Livre",
-        "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
+        "Peso R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
         "Até 0,3 kg R$ 5,65 R$ 6,85 R$ 8,15 R$ 12,95 R$ 14,95 R$ 16,95 R$ 19,05 R$ 21,65",
         "De 0,3 a 0,5 kg R$ 5,95 R$ 6,95 R$ 8,25 R$ 13,85 R$ 16,15 R$ 18,15 R$ 20,45 R$ 23,25",
         "De 0,5 a 1 kg R$ 6,05 R$ 7,15 R$ 8,45 R$ 14,45 R$ 16,85 R$ 19,05 R$ 21,35 R$ 24,45",
@@ -526,7 +526,7 @@
         "De 125 a 150 kg R$ 8,65 R$ 12,85 R$ 14,25 R$ 127,45 R$ 147,05 R$ 166,55 R$ 185,55 R$ 200,35",
         "Mais de 150 kg R$ 8,75 R$ 12,85 R$ 14,45 R$ 167,05 R$ 193,35 R$ 218,45 R$ 243,45 R$ 262,85",
         "Custos por oferecer frete grátis rápido para produtos abaixo de R$ 79 (opcional)",
-        "Peso R$ 0 a R$ 78,99*",
+        "Peso R$ 0 a R$ 78,99**",
         "Até 0,3 kg R$ 12,95",
         "De 0,3 a 0,5 kg R$ 13,85",
         "De 0,5 a 1 kg R$ 14,45",
@@ -557,7 +557,7 @@
         "De 100 a 125 kg R$ 120,15",
         "De 125 a 150 kg R$ 127,45",
         "Mais de 150 kg R$ 167,05",
-        "*Os produtos de menos de R$ 19 pagam no máximo metade do preço do produto.",
+        "*Os produtos de menos de R$ 19 pagam no máximo metade do preço do produto no custo de envio.",
         "**Nas lojas de supermercado, oferecemos frete grátis em milhares de carrinhos a partir de um valor mínimo, que pode variar de acordo com a localização do comprador e as rotas disponíveis para entrega. De qualquer forma, o comprador será informado sobre o valor mínimo para frete grátis antes da compra. Confira as condições e limitações da oferta de frete grátis",
         "Em alguns casos excepcionais, você oferece envio com desconto ao invés de frete grátis. Isso vai depender do preço, peso do produto e localização do comprador.",
         "Lembre-se de que, se você vender kits, pagará apenas um único custo por kit vendido.",
@@ -570,7 +570,7 @@
         "Como é cobrado o frete nas vendas de atacado"
       ],
       "numbers": {
-        "brl:0.00": "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
+        "brl:0.00": "Peso R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
         "brl:10.05": "De 11 a 13 kg R$ 7,15 R$ 10,05 R$ 11,45 R$ 42,55 R$ 49,75 R$ 56,85 R$ 63,85 R$ 70,95",
         "brl:10.25": "De 4 a 5 kg R$ 6,55 R$ 8,85 R$ 10,25 R$ 19,75 R$ 22,85 R$ 26,05 R$ 29,25 R$ 32,45",
         "brl:10.35": "De 5 a 6 kg R$ 6,65 R$ 8,95 R$ 10,35 R$ 25,95 R$ 29,15 R$ 33,35 R$ 36,45 R$ 40,85",
@@ -578,7 +578,7 @@
         "brl:10.55": "De 7 a 8 kg R$ 6,85 R$ 9,25 R$ 10,55 R$ 29,45 R$ 34,35 R$ 39,25 R$ 44,15 R$ 49,35",
         "brl:10.65": "De 8 a 9 kg R$ 6,95 R$ 9,35 R$ 10,65 R$ 30,25 R$ 35,25 R$ 40,35 R$ 45,35 R$ 50,75",
         "brl:10.85": "De 9 a 10 kg R$ 7,05 R$ 9,45 R$ 10,85 R$ 38,25 R$ 45,05 R$ 51,95 R$ 58,75 R$ 65,85",
-        "brl:100.00": "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
+        "brl:100.00": "Peso R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
         "brl:100.05": "De 30 a 40 kg R$ 7,85 R$ 11,45 R$ 12,65 R$ 68,35 R$ 79,65 R$ 89,75 R$ 100,05 R$ 107,95",
         "brl:103.45": "De 40 a 50 kg R$ 7,95 R$ 11,65 R$ 12,85 R$ 70,95 R$ 81,85 R$ 92,85 R$ 103,45 R$ 111,65",
         "brl:105.95": "De 60 a 70 kg R$ 8,15 R$ 12,05 R$ 13,25 R$ 80,95 R$ 93,75 R$ 105,95 R$ 118,05 R$ 127,45",
@@ -597,14 +597,14 @@
         "brl:111.65": "De 40 a 50 kg R$ 7,95 R$ 11,65 R$ 12,85 R$ 70,95 R$ 81,85 R$ 92,85 R$ 103,45 R$ 111,65",
         "brl:118.05": "De 60 a 70 kg R$ 8,15 R$ 12,05 R$ 13,25 R$ 80,95 R$ 93,75 R$ 105,95 R$ 118,05 R$ 127,45",
         "brl:119.05": "De 50 a 60 kg R$ 8,05 R$ 11,85 R$ 13,05 R$ 75,55 R$ 87,25 R$ 99,05 R$ 110,25 R$ 119,05",
-        "brl:119.99": "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
+        "brl:119.99": "Peso R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
         "brl:12.05": "De 17 a 20 kg R$ 7,45 R$ 10,65 R$ 12,05 R$ 55,15 R$ 64,35 R$ 73,55 R$ 82,75 R$ 91,95",
         "brl:12.25": "De 20 a 25 kg R$ 7,65 R$ 11,05 R$ 12,25 R$ 64,55 R$ 75,75 R$ 85,45 R$ 96,25 R$ 106,85",
         "brl:12.45": "De 25 a 30 kg R$ 7,75 R$ 11,25 R$ 12,45 R$ 66,45 R$ 76,05 R$ 86,25 R$ 97,15 R$ 107,85",
         "brl:12.65": "De 30 a 40 kg R$ 7,85 R$ 11,45 R$ 12,65 R$ 68,35 R$ 79,65 R$ 89,75 R$ 100,05 R$ 107,95",
         "brl:12.85": "De 40 a 50 kg R$ 7,95 R$ 11,65 R$ 12,85 R$ 70,95 R$ 81,85 R$ 92,85 R$ 103,45 R$ 111,65",
         "brl:12.95": "Até 0,3 kg R$ 5,65 R$ 6,85 R$ 8,15 R$ 12,95 R$ 14,95 R$ 16,95 R$ 19,05 R$ 21,65",
-        "brl:120.00": "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
+        "brl:120.00": "Peso R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
         "brl:120.15": "De 100 a 125 kg R$ 8,55 R$ 12,85 R$ 14,05 R$ 120,15 R$ 138,95 R$ 156,95 R$ 174,85 R$ 188,85",
         "brl:122.95": "De 80 a 90 kg R$ 8,35 R$ 12,45 R$ 13,65 R$ 94,05 R$ 108,35 R$ 122,95 R$ 136,95 R$ 147,85",
         "brl:123.35": "De 70 a 80 kg R$ 8,25 R$ 12,25 R$ 13,45 R$ 84,65 R$ 97,95 R$ 110,75 R$ 123,35 R$ 133,15",
@@ -626,9 +626,9 @@
         "brl:140.45": "De 90 a 100 kg R$ 8,45 R$ 12,65 R$ 13,85 R$ 107,45 R$ 124,85 R$ 140,45 R$ 156,45 R$ 168,85",
         "brl:147.05": "De 125 a 150 kg R$ 8,65 R$ 12,85 R$ 14,25 R$ 127,45 R$ 147,05 R$ 166,55 R$ 185,55 R$ 200,35",
         "brl:147.85": "De 80 a 90 kg R$ 8,35 R$ 12,45 R$ 13,65 R$ 94,05 R$ 108,35 R$ 122,95 R$ 136,95 R$ 147,85",
-        "brl:149.99": "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
+        "brl:149.99": "Peso R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
         "brl:15.05": "De 1,5 a 2 kg R$ 6,25 R$ 7,45 R$ 8,75 R$ 15,05 R$ 17,65 R$ 19,85 R$ 22,25 R$ 25,55",
-        "brl:150.00": "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
+        "brl:150.00": "Peso R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
         "brl:156.45": "De 90 a 100 kg R$ 8,45 R$ 12,65 R$ 13,85 R$ 107,45 R$ 124,85 R$ 140,45 R$ 156,45 R$ 168,85",
         "brl:156.95": "De 100 a 125 kg R$ 8,55 R$ 12,85 R$ 14,05 R$ 120,15 R$ 138,95 R$ 156,95 R$ 174,85 R$ 188,85",
         "brl:16.15": "De 0,3 a 0,5 kg R$ 5,95 R$ 6,95 R$ 8,25 R$ 13,85 R$ 16,15 R$ 18,15 R$ 20,45 R$ 23,25",
@@ -643,7 +643,7 @@
         "brl:17.85": "De 3 a 4 kg R$ 6,45 R$ 8,75 R$ 9,75 R$ 17,85 R$ 20,75 R$ 23,35 R$ 26,35 R$ 29,25",
         "brl:174.85": "De 100 a 125 kg R$ 8,55 R$ 12,85 R$ 14,05 R$ 120,15 R$ 138,95 R$ 156,95 R$ 174,85 R$ 188,85",
         "brl:18.15": "De 0,3 a 0,5 kg R$ 5,95 R$ 6,95 R$ 8,25 R$ 13,85 R$ 16,15 R$ 18,15 R$ 20,45 R$ 23,25",
-        "brl:18.99": "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
+        "brl:18.99": "Peso R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
         "brl:185.55": "De 125 a 150 kg R$ 8,65 R$ 12,85 R$ 14,25 R$ 127,45 R$ 147,05 R$ 166,55 R$ 185,55 R$ 200,35",
         "brl:188.85": "De 100 a 125 kg R$ 8,55 R$ 12,85 R$ 14,05 R$ 120,15 R$ 138,95 R$ 156,95 R$ 174,85 R$ 188,85",
         "brl:19.00": "Em anúncios de R$ 19 a R$ 78,99, o Mercado Livre oferece frete grátis padrão.",
@@ -653,10 +653,10 @@
         "brl:19.75": "De 4 a 5 kg R$ 6,55 R$ 8,85 R$ 10,25 R$ 19,75 R$ 22,85 R$ 26,05 R$ 29,25 R$ 32,45",
         "brl:19.85": "De 1,5 a 2 kg R$ 6,25 R$ 7,45 R$ 8,75 R$ 15,05 R$ 17,65 R$ 19,85 R$ 22,25 R$ 25,55",
         "brl:193.35": "Mais de 150 kg R$ 8,75 R$ 12,85 R$ 14,45 R$ 167,05 R$ 193,35 R$ 218,45 R$ 243,45 R$ 262,85",
-        "brl:199.99": "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
+        "brl:199.99": "Peso R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
         "brl:20.45": "De 0,3 a 0,5 kg R$ 5,95 R$ 6,95 R$ 8,25 R$ 13,85 R$ 16,15 R$ 18,15 R$ 20,45 R$ 23,25",
         "brl:20.75": "De 3 a 4 kg R$ 6,45 R$ 8,75 R$ 9,75 R$ 17,85 R$ 20,75 R$ 23,35 R$ 26,35 R$ 29,25",
-        "brl:200.00": "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
+        "brl:200.00": "Peso R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
         "brl:200.35": "De 125 a 150 kg R$ 8,65 R$ 12,85 R$ 14,25 R$ 127,45 R$ 147,05 R$ 166,55 R$ 185,55 R$ 200,35",
         "brl:21.35": "De 0,5 a 1 kg R$ 6,05 R$ 7,15 R$ 8,45 R$ 14,45 R$ 16,85 R$ 19,05 R$ 21,35 R$ 24,45",
         "brl:21.65": "Até 0,3 kg R$ 5,65 R$ 6,85 R$ 8,15 R$ 12,95 R$ 14,95 R$ 16,95 R$ 19,05 R$ 21,65",
@@ -701,8 +701,8 @@
         "brl:45.55": "De 13 a 15 kg R$ 7,25 R$ 10,25 R$ 11,65 R$ 45,55 R$ 52,95 R$ 60,55 R$ 68,15 R$ 75,65",
         "brl:48.55": "De 10 a 11 kg R$ 7,05 R$ 9,65 R$ 11,05 R$ 41,65 R$ 48,55 R$ 55,45 R$ 62,35 R$ 69,35",
         "brl:48.95": "De 15 a 17 kg R$ 7,35 R$ 10,45 R$ 11,85 R$ 48,95 R$ 56,55 R$ 64,05 R$ 71,35 R$ 79,35",
-        "brl:48.99": "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
-        "brl:49.00": "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
+        "brl:48.99": "Peso R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
+        "brl:49.00": "Peso R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
         "brl:49.35": "De 7 a 8 kg R$ 6,85 R$ 9,25 R$ 10,55 R$ 29,45 R$ 34,35 R$ 39,25 R$ 44,15 R$ 49,35",
         "brl:49.75": "De 11 a 13 kg R$ 7,15 R$ 10,05 R$ 11,45 R$ 42,55 R$ 49,75 R$ 56,85 R$ 63,85 R$ 70,95",
         "brl:5.65": "Até 0,3 kg R$ 5,65 R$ 6,85 R$ 8,15 R$ 12,95 R$ 14,95 R$ 16,95 R$ 19,05 R$ 21,65",
@@ -789,15 +789,8 @@
         "brl:97.15": "De 25 a 30 kg R$ 7,75 R$ 11,25 R$ 12,45 R$ 66,45 R$ 76,05 R$ 86,25 R$ 97,15 R$ 107,85",
         "brl:97.95": "De 70 a 80 kg R$ 8,25 R$ 12,25 R$ 13,45 R$ 84,65 R$ 97,95 R$ 110,75 R$ 123,35 R$ 133,15",
         "brl:99.05": "De 50 a 60 kg R$ 8,05 R$ 11,85 R$ 13,05 R$ 75,55 R$ 87,25 R$ 99,05 R$ 110,25 R$ 119,05",
-        "brl:99.99": "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
-        "pct:50.00": "Até 50% de desconto nos seus custos por ter reputação verde. Os valores da tabela já incluem essa isenção."
-      },
-      "pending": {
-        "key": [
-          "636e0da874d4df2e64b7909e2e04436c7d9b01b9503a35352f470f8978f9681c",
-          "https://www.mercadolivre.com.br/ajuda/40538"
-        ],
-        "seen_at": "2026-11-13T18:03:43+00:00"
+        "brl:99.99": "Peso R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
+        "pct:50.00": "Até 50% de desconto nos seus custos por ter reputação verde. Os valores da tabela já incluem esse desconto."
       },
       "sections": [
         "Custos dos Envios no Mercado Livre para MercadoLíder, reputação verde ou sem reputação",
@@ -888,7 +881,7 @@
       "tables": [
         {
           "colunas": [
-            "Peso*",
+            "Peso",
             "R$ 0 a R$ 18,99*",
             "R$ 19 a R$ 48,99",
             "R$ 49 a R$ 78,99",
@@ -1235,7 +1228,7 @@
         {
           "colunas": [
             "Peso",
-            "R$ 0 a R$ 78,99*"
+            "R$ 0 a R$ 78,99**"
           ],
           "linhas": [
             [
@@ -1362,7 +1355,7 @@
           "titulo": "Custos por oferecer frete grátis rápido para produtos abaixo de R$ 79 (opcional)"
         }
       ],
-      "text_hash": "0b0ac149cea55732cf3647b5043884ee99fa268ef4bf41093c6bab483d1058ff",
+      "text_hash": "636e0da874d4df2e64b7909e2e04436c7d9b01b9503a35352f470f8978f9681c",
       "url": "https://www.mercadolivre.com.br/ajuda/40538",
       "variants": [
         {
@@ -1371,6 +1364,13 @@
             "https://www.mercadolivre.com.br/ajuda/40538"
           ],
           "last_seen": "2026-11-02"
+        },
+        {
+          "key": [
+            "0b0ac149cea55732cf3647b5043884ee99fa268ef4bf41093c6bab483d1058ff",
+            "https://www.mercadolivre.com.br/ajuda/40538"
+          ],
+          "last_seen": "2026-11-13"
         }
       ]
     },
