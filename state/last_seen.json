@@ -792,6 +792,13 @@
         "brl:99.99": "Peso* R$ 0 a R$ 18,99* R$ 19 a R$ 48,99 R$ 49 a R$ 78,99 R$ 79 a R$ 99,99 R$ 100 a R$ 119,99 R$ 120 a R$ 149,99 R$ 150 a R$ 199,99 A partir de R$ 200",
         "pct:50.00": "Até 50% de desconto nos seus custos por ter reputação verde. Os valores da tabela já incluem essa isenção."
       },
+      "pending": {
+        "key": [
+          "636e0da874d4df2e64b7909e2e04436c7d9b01b9503a35352f470f8978f9681c",
+          "https://www.mercadolivre.com.br/ajuda/40538"
+        ],
+        "seen_at": "2026-11-13T18:03:43+00:00"
+      },
       "sections": [
         "Custos dos Envios no Mercado Livre para MercadoLíder, reputação verde ou sem reputação",
         "Custos dos Envios no Mercado Livre para MercadoLíder, reputação verde ou sem reputação",
