@@ -174,16 +174,7 @@
       ],
       "tables": [],
       "text_hash": "a06cc55b2be79a76ad90189e8c5957c5dff9fb41bcc022e58c31e0a8a8889772",
-      "url": "https://venda.amazon.com.br/cresca/fba",
-      "variants": [
-        {
-          "key": [
-            "78330af68febeb0aa3f070f685ad07e1d0556995661ab483c2300e132ad50107",
-            "https://venda.amazon.com.br/cresca/fba"
-          ],
-          "last_seen": "2026-11-02"
-        }
-      ]
+      "url": "https://venda.amazon.com.br/cresca/fba"
     },
     "amazon_precos": {
       "changed_at": "2026-11-02T13:26:04+00:00",
@@ -459,24 +450,10 @@
       "variants": [
         {
           "key": [
-            "4a4439a9aad4969c2dd2ddd1ba3232d0c62fd1a8dcfb22da9e3ba5f90e29ffe6",
-            "https://venda.amazon.com.br/precos"
-          ],
-          "last_seen": "2026-11-02"
-        },
-        {
-          "key": [
-            "2a544271af750aacc7da350002091698509dcc011d604280e574f2864edc56c2",
-            "https://venda.amazon.com.br/precos"
-          ],
-          "last_seen": "2026-11-02"
-        },
-        {
-          "key": [
             "acb785844e13ad74c5ac0b63106fde28fdd55608995f46bfb1165c59d0baa567",
             "https://venda.amazon.com.br/precos"
           ],
-          "last_seen": "2026-11-16"
+          "last_seen": "2026-11-17"
         }
       ]
     },
@@ -1358,13 +1335,6 @@
       "text_hash": "636e0da874d4df2e64b7909e2e04436c7d9b01b9503a35352f470f8978f9681c",
       "url": "https://www.mercadolivre.com.br/ajuda/40538",
       "variants": [
-        {
-          "key": [
-            "3fbbe5931d3e80a4ad80533374c9a90a651c3a53ac719c5d96fdb9612c47b107",
-            "https://www.mercadolivre.com.br/ajuda/40538"
-          ],
-          "last_seen": "2026-11-02"
-        },
         {
           "key": [
             "0b0ac149cea55732cf3647b5043884ee99fa268ef4bf41093c6bab483d1058ff",
