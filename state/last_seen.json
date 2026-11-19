@@ -321,6 +321,13 @@
         "pct:2.50": "O Programa de Parcelamento Sem Juros evoluiu. A partir de agora, seus produtos passam a contar com o Amazon Mais Vantagens, o plano mais completo: parcelamento em até 12x sem juros e desconto Pix de 5% para o cliente (pago pela Amazon), por uma tarifa de 2,5% (tributos inclusos). Se preferir oferecer apenas o parcelamento sem juros, o Amazon Vantagens continua disponível como alternativa, com tarifa de 1,5% (tributos inclusos). Produtos a partir de R$40,00 são elegíveis.",
         "pct:5.00": "O Programa de Parcelamento Sem Juros evoluiu. A partir de agora, seus produtos passam a contar com o Amazon Mais Vantagens, o plano mais completo: parcelamento em até 12x sem juros e desconto Pix de 5% para o cliente (pago pela Amazon), por uma tarifa de 2,5% (tributos inclusos). Se preferir oferecer apenas o parcelamento sem juros, o Amazon Vantagens continua disponível como alternativa, com tarifa de 1,5% (tributos inclusos). Produtos a partir de R$40,00 são elegíveis."
       },
+      "pending": {
+        "key": [
+          "5ea58def0d5f2fa120a4ee39c1d991febb20b9777f5333f3b2a23363c8de68de",
+          "https://venda.amazon.com.br/precos"
+        ],
+        "seen_at": "2026-11-19T14:21:18+00:00"
+      },
       "sections": [
         "Quanto custa vender na Amazon?",
         "Quanto custa vender na Amazon?",
