@@ -177,7 +177,7 @@
       "url": "https://venda.amazon.com.br/cresca/fba"
     },
     "amazon_precos": {
-      "changed_at": "2026-11-02T13:26:04+00:00",
+      "changed_at": "2026-11-19T17:19:36+00:00",
       "formato": 2,
       "lines": [
         "O custo de vender no marketplace da Amazon varia de acordo com o plano de venda, a categoria de produto e a forma de enviar seus pedidos.",
@@ -199,7 +199,6 @@
         "Os planos para vender no marketplace da Amazon oferecem liberdade para o vendedor parceiro pagar por venda ou pagar uma mensalidade fixa. Analise a melhor opção para o seu negócio e segmento. Lembrando que você pode alterar ou cancelar a qualquer momento, sem burocracia!",
         "Plano Individual",
         "Plano Profissional",
-        "Cadastre-se com 1 ano GRÁTIS",
         "Tarifa",
         "Tarifa: R$ 2,00",
         "por item + comissão",
@@ -209,8 +208,6 @@
         "Benefícios do plano",
         "Escale seu negócio com o programa Logística da Amazon (FBA)",
         "Personalize as taxas de envio para seus produtos",
-        "Plano Individual",
-        "Plano Profissional",
         "COMISSÕES DE VENDA DE 10% a 15%",
         "Como funciona a comissão da Amazon?",
         "As comissões são pagas por cada item vendido e variam de acordo com a categoria, conforme listado abaixo. A porcentagem da comissão é calculada em relação ao preço total de venda do produto (preço final do comprador). Caso o valor referente seja menor que a comissão mínima, a Amazon desconta o valor da comissão mínima, equivalente a R$ 1,00 (um real).",
@@ -259,12 +256,16 @@
         "Demais categorias: 15%",
         "1. Produtos de Acessórios eletrônicos com preços de venda acima de R$ 100,00 terão uma comissão de 15% sobre os primeiros R$ 100,00 e 10% para o que exceder esse valor. Produtos de Acessórios eletrônicos com preços inferiores a R$ 100,00 terão uma nova comissão de 15%.",
         "2. Itens na categoria Móveis com preços de venda acima de R$ 200,00 terão uma comissão de 15% sobre os primeiros R$ 200,00 e 10% para o que exceder esse valor. Itens na categoria Móveis com preços inferiores a R$ 200,00 continuarão com uma comissão de 15%.",
-        "O Programa de Parcelamento Sem Juros evoluiu. A partir de agora, seus produtos passam a contar com o Amazon Mais Vantagens, o plano mais completo: parcelamento em até 12x sem juros e desconto Pix de 5% para o cliente (pago pela Amazon), por uma tarifa de 2,5% (tributos inclusos). Se preferir oferecer apenas o parcelamento sem juros, o Amazon Vantagens continua disponível como alternativa, com tarifa de 1,5% (tributos inclusos). Produtos a partir de R$40,00 são elegíveis.",
-        "Aproveite o período promocional: de 30/09 a 30/10/2026, seus produtos no Amazon Mais Vantagens pagam a tarifa promocional de 1,5%. É a oportunidade de testar o plano completo, com desconto Pix e mais destaque, sem custo adicional. A partir de 31/10/2026, a tarifa padrão do Amazon Mais Vantagens passa a ser de 2,5% (o Amazon Vantagens permanece em 1,5%).",
-        "Melhore seu alcance e conversão: atraia novos clientes com planos de pagamento que se ajustam à realidade do consumidor brasileiro.",
-        "Controle suas ofertas: troque para o Amazon Vantagens (1,5%), permaneça no Amazon Mais Vantagens (2,5%) ou remova seus produtos do programa a qualquer momento.",
-        "Produtos elegíveis com preço até R$10.000 são inscritos automaticamente no Amazon Mais Vantagens. Você pode trocar de plano ou sair do programa a qualquer momento no Seller Central.",
-        "Saiba mais sobre os planos",
+        "Planos disponíveis",
+        "Amazon Mais Vantagens — o plano completo",
+        "Ofereça parcelamento em até 12x sem juros e desconto de 5% para pagamentos à vista via Pix, além de maior qualificação para a Oferta em Destaque. Tarifa: 2,5% (tributos inclusos).",
+        "Aproveite o período promocional: de 30/09 a 30/10/2026, seus produtos no Amazon Mais Vantagens pagam a tarifa promocional de 1,5%. A partir de 31/10/2026, a tarifa padrão passa a ser de 2,5%.",
+        "Ofereça parcelamento em até 12x sem juros, sem o desconto para pagamentos via Pix. Tarifa: 1,5% (tributos inclusos).",
+        "Ofereça o desconto de 5% para pagamentos à vista via Pix. Tarifa: 1,5% (tributos inclusos).",
+        "Mais destaque: ofereça parcelamento sem juros e ganhe maior atratividade para as suas ofertas, ampliando suas chances de visibilidade com o 5% de desconto à vista no Pix.",
+        "Controle total: permaneça no Amazon Mais Vantagens (2,5%), troque para o Amazon Vantagens (1,5%) ou remova seus produtos do programa a qualquer momento.",
+        "Produtos de R$40,00 a R$10.000,00 são inscritos automaticamente no Amazon Mais Vantagens. Produtos acima de R$10.000,00 são elegíveis apenas ao Amazon Vantagens (somente parcelamento sem juros).",
+        "Você pode trocar seus produtos de plano ou sair do programa a qualquer momento, de forma individual ou em massa. Para gerenciar seus produtos, acesse o menu Produto > Gerenciar Preços > Programa Amazon Vantagens no Seller Central.",
         "Você pode contar com os serviços da Amazon de logística e distribuição de produtos para oferecer entrega rápida e grátis para os clientes e facilitar a logística do seu negócio. Conheça as possibilidades de envios de encomendas:",
         "FBA",
         "FBA Onsite",
@@ -305,28 +306,21 @@
       "numbers": {
         "brl:1.00": "As comissões são pagas por cada item vendido e variam de acordo com a categoria, conforme listado abaixo. A porcentagem da comissão é calculada em relação ao preço total de venda do produto (preço final do comprador). Caso o valor referente seja menor que a comissão mínima, a Amazon desconta o valor da comissão mínima, equivalente a R$ 1,00 (um real).",
         "brl:100.00": "Acessórios para eletrônicos e para PC¹: 15% até R$ 100,00",
-        "brl:10000.00": "Produtos elegíveis com preço até R$10.000 são inscritos automaticamente no Amazon Mais Vantagens. Você pode trocar de plano ou sair do programa a qualquer momento no Seller Central.",
+        "brl:10000.00": "Produtos de R$40,00 a R$10.000,00 são inscritos automaticamente no Amazon Mais Vantagens. Produtos acima de R$10.000,00 são elegíveis apenas ao Amazon Vantagens (somente parcelamento sem juros).",
         "brl:19.00": "Ofereça FRETE GRÁTIS em produtos a partir de R$ 19 em TODAS as categorias!² Saiba mais",
         "brl:2.00": "O Plano Individual é isento de mensalidade; O custo é de R$ 2,00 por produto vendido.",
         "brl:200.00": "Móveis²: 15% até R$ 200,00",
-        "brl:40.00": "O Programa de Parcelamento Sem Juros evoluiu. A partir de agora, seus produtos passam a contar com o Amazon Mais Vantagens, o plano mais completo: parcelamento em até 12x sem juros e desconto Pix de 5% para o cliente (pago pela Amazon), por uma tarifa de 2,5% (tributos inclusos). Se preferir oferecer apenas o parcelamento sem juros, o Amazon Vantagens continua disponível como alternativa, com tarifa de 1,5% (tributos inclusos). Produtos a partir de R$40,00 são elegíveis.",
+        "brl:40.00": "Produtos de R$40,00 a R$10.000,00 são inscritos automaticamente no Amazon Mais Vantagens. Produtos acima de R$10.000,00 são elegíveis apenas ao Amazon Vantagens (somente parcelamento sem juros).",
         "brl:79.00": "Frete grátis: R$ 19 a R$ 79²",
-        "pct:1.50": "O Programa de Parcelamento Sem Juros evoluiu. A partir de agora, seus produtos passam a contar com o Amazon Mais Vantagens, o plano mais completo: parcelamento em até 12x sem juros e desconto Pix de 5% para o cliente (pago pela Amazon), por uma tarifa de 2,5% (tributos inclusos). Se preferir oferecer apenas o parcelamento sem juros, o Amazon Vantagens continua disponível como alternativa, com tarifa de 1,5% (tributos inclusos). Produtos a partir de R$40,00 são elegíveis.",
+        "pct:1.50": "Aproveite o período promocional: de 30/09 a 30/10/2026, seus produtos no Amazon Mais Vantagens pagam a tarifa promocional de 1,5%. A partir de 31/10/2026, a tarifa padrão passa a ser de 2,5%.",
         "pct:10.00": "A Amazon cobra uma comissão para cada item vendido, que varia entre 10% a 15%, dependendo da categoria do produto.",
         "pct:11.00": "Eletrodomésticos de linha branca³: 11%",
         "pct:12.00": "Saúde e cuidados pessoais: 12%",
         "pct:13.00": "Eletrônicos portáteis: 13%",
         "pct:14.00": "Beleza de luxo: 14%",
         "pct:15.00": "A Amazon cobra uma comissão para cada item vendido, que varia entre 10% a 15%, dependendo da categoria do produto.",
-        "pct:2.50": "O Programa de Parcelamento Sem Juros evoluiu. A partir de agora, seus produtos passam a contar com o Amazon Mais Vantagens, o plano mais completo: parcelamento em até 12x sem juros e desconto Pix de 5% para o cliente (pago pela Amazon), por uma tarifa de 2,5% (tributos inclusos). Se preferir oferecer apenas o parcelamento sem juros, o Amazon Vantagens continua disponível como alternativa, com tarifa de 1,5% (tributos inclusos). Produtos a partir de R$40,00 são elegíveis.",
-        "pct:5.00": "O Programa de Parcelamento Sem Juros evoluiu. A partir de agora, seus produtos passam a contar com o Amazon Mais Vantagens, o plano mais completo: parcelamento em até 12x sem juros e desconto Pix de 5% para o cliente (pago pela Amazon), por uma tarifa de 2,5% (tributos inclusos). Se preferir oferecer apenas o parcelamento sem juros, o Amazon Vantagens continua disponível como alternativa, com tarifa de 1,5% (tributos inclusos). Produtos a partir de R$40,00 são elegíveis."
-      },
-      "pending": {
-        "key": [
-          "5ea58def0d5f2fa120a4ee39c1d991febb20b9777f5333f3b2a23363c8de68de",
-          "https://venda.amazon.com.br/precos"
-        ],
-        "seen_at": "2026-11-19T14:21:18+00:00"
+        "pct:2.50": "Ofereça parcelamento em até 12x sem juros e desconto de 5% para pagamentos à vista via Pix, além de maior qualificação para a Oferta em Destaque. Tarifa: 2,5% (tributos inclusos).",
+        "pct:5.00": "Ofereça parcelamento em até 12x sem juros e desconto de 5% para pagamentos à vista via Pix, além de maior qualificação para a Oferta em Destaque. Tarifa: 2,5% (tributos inclusos)."
       },
       "sections": [
         "Quanto custa vender na Amazon?",
@@ -348,7 +342,6 @@
         "Planos para vender na Amazon",
         "Plano Individual",
         "Plano Profissional",
-        "Plano Profissional",
         "Tarifa",
         "Tarifa",
         "Tarifa",
@@ -358,8 +351,6 @@
         "Benefícios do plano",
         "Benefícios do plano",
         "Benefícios do plano",
-        "Plano Individual",
-        "Plano Profissional",
         "COMISSÕES DE VENDA DE 10% a 15%",
         "Como funciona a comissão da Amazon?",
         "Como funciona a comissão da Amazon?",
@@ -408,12 +399,16 @@
         "Comissão da Amazon (%)",
         "Comissão da Amazon (%)",
         "Comissão da Amazon (%)",
-        "Ofereça parcelamento sem juros para o cliente",
-        "Ofereça parcelamento sem juros para o cliente",
-        "Ofereça parcelamento sem juros para o cliente",
-        "Ofereça parcelamento sem juros para o cliente",
-        "Ofereça parcelamento sem juros para o cliente",
-        "Ofereça parcelamento sem juros para o cliente",
+        "Conheça o Amazon Vantagens",
+        "Conheça o Amazon Vantagens",
+        "Conheça o Amazon Vantagens",
+        "Conheça o Amazon Vantagens",
+        "Conheça o Amazon Vantagens",
+        "Conheça o Amazon Vantagens",
+        "Conheça o Amazon Vantagens",
+        "Conheça o Amazon Vantagens",
+        "Conheça o Amazon Vantagens",
+        "Conheça o Amazon Vantagens",
         "Quer vender mais online?",
         "Quer vender mais online?",
         "FBA Onsite",
@@ -452,7 +447,7 @@
         "Aproveite todos os benefícios de vender na Amazon com mensalidade GRÁTIS por 1 ano."
       ],
       "tables": [],
-      "text_hash": "832b4398380e39d5483ff90f570b2fbf48da22ea359ca9fd62507b996f6288de",
+      "text_hash": "5ea58def0d5f2fa120a4ee39c1d991febb20b9777f5333f3b2a23363c8de68de",
       "url": "https://venda.amazon.com.br/precos",
       "variants": [
         {
@@ -461,6 +456,13 @@
             "https://venda.amazon.com.br/precos"
           ],
           "last_seen": "2026-11-18"
+        },
+        {
+          "key": [
+            "832b4398380e39d5483ff90f570b2fbf48da22ea359ca9fd62507b996f6288de",
+            "https://venda.amazon.com.br/precos"
+          ],
+          "last_seen": "2026-11-19"
         }
       ]
     },
